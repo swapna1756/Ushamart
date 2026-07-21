@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #0B6F3A;
+  --color-primary-hover: #09582E;
+  --color-primary-light: #E7F5ED;
+  
+  --color-secondary: #EE4224;
+  --color-secondary-hover: #D63519;
+  --color-secondary-light: #FDECE9;
+  
+  --color-bg-light: #F7F7F7;
+  --color-bg-card: #FFFFFF;
+  
+  --color-text-dark: #1A1A1A;
+  --color-text-medium: #6B6B6B;
+  --color-text-muted: #A0A0A0;
+  --color-text-success: #0B6F3A;
+  
+  --font-sans: 'Outfit', 'Inter', 'system-ui', 'sans-serif';
+  
+  --shadow-premium: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 8px -1px rgba(0, 0, 0, 0.03);
+  --shadow-floating: 0 12px 36px -4px rgba(11, 111, 58, 0.15), 0 4px 16px -2px rgba(0, 0, 0, 0.05);
+}
+
+@layer base {
+  body {
+    @apply bg-bg-light text-text-dark font-sans antialiased overflow-x-hidden select-none;
+  }
+}
+
+/* Utility to hide scrollbars while preserving scrolling ability */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Fluid scale press effect for buttons and items */
+.active-scale {
+  transition: transform 0.1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.active-scale:active {
+  transform: scale(0.95);
+}
+
+/* Custom loading pulse and stepper styling */
+.stepper-pop {
+  animation: pop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes pop {
+  0% { transform: scale(0.9); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
+}
