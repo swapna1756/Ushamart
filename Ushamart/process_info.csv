@@ -1,0 +1,26 @@
+﻿"ProcessId","CommandLine"
+"256","""C:\Program Files\nodejs\node.exe"" ""C:\Users\Sai Kumar\AppData\Roaming\npm/node_modules/npm/bin/npm-cli.js"" run dev"
+"15808","""node""   ""D:\projects\UshaMart\node_modules\.bin\\..\vite\bin\vite.js"" "
+"17600","""C:\Program Files\nodejs\node.exe"" src/db/mockFirebase.js"
+"7244","""C:\Program Files\nodejs\node.exe"" -e ""
+const https = require('https');
+const imgs = [
+  '1550583724-b2692b85b150', // Burger? No
+  '1596662951913-90924bcebd83', // Milk
+  '1598373182133-52452f7691ef', // Bread
+  '1572115600371-d85c8f85f39e', // Popcorn
+  '1560806887-1e4cd0b6fac6', // Apple
+  '1541167760496-1628856ab772', // Coffee
+  '1558961363-fa8fdf82db35', // Cookies
+  '1622483767028-3f66f32aef97', // Soda
+  '1603048297172-c92544798d5e', // Meat
+  '1563214041-35b8ddb756be', // Pepper
+  '1607503799651-7e3e098ffb41', // Soap
+  '1608248593842-80ba4e4c278c', // Shampoo
+  '1612929633738-8fe01f72810c', // Noodles
+  '1587529810411-bba09b7754eb'  // Detergent
+];
+Promise.all(imgs.map(id => new Promise(res => {
+  https.get('https://images.unsplash.com/photo-' + id + '?w=100&q=80', (response) => res(id + ' ' + response.statusCode));
+}))).then(console.log);
+"""

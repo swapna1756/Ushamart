@@ -1,0 +1,31 @@
+# ── Node modules (all levels) ─────────────────────────────────────────────────
+**/node_modules/
+
+# ── Build output ──────────────────────────────────────────────────────────────
+**/dist/
+**/.vite/
+**/.vite-temp/
+
+# ── Environment / Secrets ─────────────────────────────────────────────────────
+**/.env
+!**/.env.example
+**/firebase-service-account.json
+
+# ── Uploaded files (runtime) ──────────────────────────────────────────────────
+admin/backend/uploads/*
+!admin/backend/uploads/.gitkeep
+
+# ── Local JSON database files ─────────────────────────────────────────────────
+admin/backend/src/database/data/*.json
+!admin/backend/src/database/data/.gitkeep
+
+# ── OS / Editor ───────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.swp
+.vscode/
+
+# ── Legacy monorepo — exclude its heavy folders ───────────────────────────────
+Ushamart/node_modules/
