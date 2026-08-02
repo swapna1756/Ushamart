@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Global Font: Segoe UI ──────────────────────────────────────────────────
+   Segoe UI is a system font — no external import needed.
+   Fallback chain ensures consistent rendering on all platforms.
+   ────────────────────────────────────────────────────────────────────────── */
+
+* {
+  box-sizing: border-box;
+  font-family: 'Segoe UI', 'Segoe UI Variable', ui-sans-serif,
+               -apple-system, BlinkMacSystemFont, 'Roboto',
+               'Helvetica Neue', Arial, sans-serif;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: 'Segoe UI', 'Segoe UI Variable', ui-sans-serif,
+               -apple-system, BlinkMacSystemFont, 'Roboto',
+               'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  background: #f7f7fb;
+  color: #1a1a1a;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Typography Hierarchy ──────────────────────────────────────────────────── */
+
+/* Display / Page Titles */
+h1 { font-weight: 700; letter-spacing: -0.025em; }
+
+/* Section Headings */
+h2, h3 { font-weight: 600; letter-spacing: -0.015em; }
+
+/* Sub-headings */
+h4, h5, h6 { font-weight: 600; letter-spacing: -0.01em; }
+
+/* Body copy */
+p, span, div, li, td, th { font-family: inherit; }
+
+/* Buttons — Semibold */
+button {
+  font-family: 'Segoe UI', 'Segoe UI Variable', ui-sans-serif,
+               -apple-system, BlinkMacSystemFont, 'Roboto',
+               'Helvetica Neue', Arial, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Inputs / Form elements */
+input, textarea, select {
+  font-family: 'Segoe UI', 'Segoe UI Variable', ui-sans-serif,
+               -apple-system, BlinkMacSystemFont, 'Roboto',
+               'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+/* Tables */
+table, th, td {
+  font-family: 'Segoe UI', 'Segoe UI Variable', ui-sans-serif,
+               -apple-system, BlinkMacSystemFont, 'Roboto',
+               'Helvetica Neue', Arial, sans-serif;
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
+
+/* ── Animations ─────────────────────────────────────────────────────────────── */
+@keyframes fadeIn  { from { opacity:0; transform:translateY(6px); }  to { opacity:1; transform:translateY(0); } }
+@keyframes slideUp { from { transform:translateY(100%); }             to { transform:translateY(0); } }
+@keyframes pop     { from { opacity:0; transform:scale(0.95); }       to { opacity:1; transform:scale(1); } }
+@keyframes spin    { to   { transform:rotate(360deg); } }
+
+.animate-fadeIn  { animation: fadeIn  0.3s ease both; }
+.animate-slideUp { animation: slideUp 0.3s ease both; }
+.animate-pop     { animation: pop     0.2s ease both; }
+.spin            { animation: spin    0.7s linear infinite; }
+
+/* ── Utilities ───────────────────────────────────────────────────────────────── */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+.btn-press { transition: transform 0.1s ease; }
+.btn-press:active { transform: scale(0.95); }
