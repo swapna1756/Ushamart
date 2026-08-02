@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Package, Grid3X3, ShoppingCart, Users,
   MapPin, Tag, Gift, Bell, BarChart3, Settings, LogOut,
-  Warehouse, Megaphone, ChevronRight
+  Warehouse, Megaphone, ChevronRight, Globe
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -16,6 +16,7 @@ const NAV = [
   { to: '/inventory',      label: 'Inventory',          icon: Warehouse },
   { to: '/special-offers', label: 'Special Offers',     icon: Gift },
   { to: '/banners',        label: 'Banners',            icon: Megaphone },
+  { to: '/location-management', label: 'Location Management', icon: Globe },
   { to: '/pincodes',       label: 'Pincode Management', icon: MapPin },
   { to: '/coupons',        label: 'Discounts',          icon: Tag },
   { to: '/notifications',  label: 'Notifications',      icon: Bell },

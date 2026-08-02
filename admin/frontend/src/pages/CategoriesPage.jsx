@@ -3,6 +3,7 @@ import { Plus, Edit2, Trash2, Eye, EyeOff, X, CheckCircle, Loader2 } from 'lucid
 import { categoriesApi } from '../services/api';
 import { useToast } from '../components/Toast';
 import ConfirmDialog from '../components/ConfirmDialog';
+import ImageUploader from '../components/ImageUploader';
 
 function CategoryModal({ isOpen, onClose, onSave, editing }) {
   const { addToast } = useToast();
@@ -45,7 +46,9 @@ function CategoryModal({ isOpen, onClose, onSave, editing }) {
               <input type="number" value={form.displayOrder} onChange={e=>set('displayOrder',e.target.value)} className={fi}/></div>
           </div>
           <div><label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">Image URL</label>
-            <input value={form.icon} onChange={e=>set('icon',e.target.value)} placeholder="https://…" className={fi}/></div>
+            <input value={form.icon} onChange={e=>set('icon',e.target.value)} placeholder="https://…" className={fi}/>
+          </div>
+          <ImageUploader label="Or Upload Image" value={form.icon} onChange={url=>set('icon',url)} hint="JPG, PNG, WebP · Max 5 MB"/>
           <div className="grid grid-cols-2 gap-3">
             <div><label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">Status</label>
               <select value={form.status} onChange={e=>set('status',e.target.value)} className={fi+' cursor-pointer'}>

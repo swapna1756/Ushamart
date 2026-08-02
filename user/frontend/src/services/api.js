@@ -35,6 +35,7 @@ const get   = p      => request('GET',   p);
 const post  = (p, b) => request('POST',  p, b);
 const put   = (p, b) => request('PUT',   p, b);
 const patch = (p, b) => request('PATCH', p, b);
+const del   = p      => request('DELETE', p);
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export const authApi = {
@@ -86,5 +87,14 @@ export const couponsApi = {
 
 // ── Notifications ─────────────────────────────────────────────────────────────
 export const notificationsApi = {
-  getAll: () => get('/notifications'),
+  getAll:  () => get('/notifications'),
+  markRead: (id) => post(`/notifications/${id}/read`, {}),
+};
+
+// ── Wishlist (server-persisted per user) ──────────────────────────────────────
+export const wishlistApi = {
+  getAll:  ()          => get('/wishlist'),
+  add:     (productId) => post(`/wishlist/${productId}`, {}),
+  remove:  (productId) => del(`/wishlist/${productId}`),
+  clear:   ()          => del('/wishlist/clear'),
 };

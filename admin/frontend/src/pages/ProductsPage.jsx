@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, ToggleLeft, ToggleRight, RefreshCw,
-  ChevronLeft, ChevronRight, ArrowUpDown, AlertCircle, Loader2,
-  Upload, X, CheckCircle, Download, Copy } from 'lucide-react';
-import { productsApi, categoriesApi, pincodesApi, uploadApi } from '../services/api';
+  ChevronLeft, ChevronRight, ArrowUpDown, Loader2, X, CheckCircle } from 'lucide-react';
+import { productsApi, categoriesApi, pincodesApi } from '../services/api';
 import { useToast } from '../components/Toast';
 import ConfirmDialog from '../components/ConfirmDialog';
+import ImageUploader from '../components/ImageUploader';
 
 /* ── Badges ── */
 function StatusBadge({ status }) {
@@ -52,14 +52,12 @@ function StockModal({ product, onClose, onSave }) {
 /* ── Product Form Modal ── */
 function ProductModal({ isOpen, onClose, onSave, editing, categories, pincodes }) {
   const { addToast } = useToast();
-  const imgRef = useRef(null);
   const EMPTY = { name:'', brand:'', description:'', category:'', unit:'500g', mrp:'', price:'',
     stock:'', sku:'', barcode:'', expiryDate:'', status:'published', images:[],
     featured:false, bestSeller:false, newArrival:false, trending:false, todayOffer:false,
     pincodesAvailable:[], gst:'5', lowStockAlert:'10', deliveryTime:'1-2 Days', cod:true };
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
-  const [imgBusy, setImgBusy] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -87,26 +85,9 @@ function ProductModal({ isOpen, onClose, onSave, editing, categories, pincodes }
     return n;
   });
 
-  const uploadImages = async (files) => {
-    if (!files?.length) return;
-    setImgBusy(true);
-    try {
-      const urls = [];
-      for (const f of Array.from(files)) {
-        if (!f.type.startsWith('image/')) continue;
-        try {
-          const res = await uploadApi.image(f);
-          urls.push(res.url);
-        } catch {
-          // fallback to base64
-          const url = await new Promise((res, rej) => {
-            const r = new FileReader(); r.onloadend = ()=>res(r.result); r.onerror=rej; r.readAsDataURL(f);
-          });
-          urls.push(url);
-        }
-      }
-      if (urls.length) set('images', [...form.images, ...urls]);
-    } finally { setImgBusy(false); }
+  // Add image URL to product images array
+  const addImageUrl = (url) => {
+    if (url && !form.images.includes(url)) set('images', [...form.images, url]);
   };
 
   const handleSave = async () => {
@@ -222,29 +203,46 @@ function ProductModal({ isOpen, onClose, onSave, editing, categories, pincodes }
             </div>
           </div>
 
-          {/* Images */}
-          <div>
-            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-2">Product Images</label>
-            <div className="flex flex-wrap gap-2">
-              <div onClick={()=>!imgBusy&&imgRef.current?.click()}
-                onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();uploadImages(e.dataTransfer.files);}}
-                className={`w-[76px] h-[76px] rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition ${imgBusy?'border-blue-300 bg-blue-50':'border-gray-300 bg-gray-50 hover:border-primary hover:bg-primary/5'}`}>
-                <input ref={imgRef} type="file" accept="image/*" multiple className="hidden"
-                  onChange={e=>{uploadImages(e.target.files);e.target.value='';}}/>
-                {imgBusy ? <Loader2 size={18} className="text-blue-500 spin"/> : <><Upload size={16} className="text-gray-400 mb-1"/><span className="text-[9px] text-gray-400 font-semibold text-center leading-tight">Drop or<br/>click</span></>}
-              </div>
-              {form.images.map((img,i)=>(
-                <div key={i} className="relative w-[76px] h-[76px] rounded-xl overflow-hidden border border-gray-200 group">
-                  <img src={img} alt="" className="w-full h-full object-cover"/>
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition flex items-center justify-center">
-                    <button type="button" onClick={()=>set('images',form.images.filter((_,j)=>j!==i))}
-                      className="opacity-0 group-hover:opacity-100 transition text-[10px] font-bold text-white bg-red-500 px-2 py-1 rounded-lg">✕</button>
-                  </div>
-                  {i===0&&<span className="absolute top-1 left-1 bg-primary text-white text-[8px] font-bold px-1.5 py-0.5 rounded">Main</span>}
+          {/* Images — using ImageUploader (supports upload + URL) */}
+          <div className="space-y-3">
+            <ImageUploader
+              label="Main Product Image"
+              value={form.images[0] || ''}
+              onChange={url => {
+                if (!url) { set('images', form.images.slice(1)); return; }
+                const imgs = [...form.images];
+                imgs[0] = url;
+                set('images', imgs);
+              }}
+              hint="JPG, PNG, WebP · Max 5 MB · This is the main display image"
+            />
+            {/* Additional images */}
+            {form.images.length > 0 && (
+              <div>
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-2">
+                  All Images ({form.images.length})
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {form.images.map((img,i)=>(
+                    <div key={i} className="relative w-[72px] h-[72px] rounded-xl overflow-hidden border border-gray-200 group">
+                      <img src={img} alt="" className="w-full h-full object-cover" onError={e=>e.target.src='/logo.png'}/>
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition flex items-center justify-center">
+                        <button type="button" onClick={()=>set('images',form.images.filter((_,j)=>j!==i))}
+                          className="opacity-0 group-hover:opacity-100 transition text-[9px] font-bold text-white bg-red-500 px-1.5 py-1 rounded-lg">✕</button>
+                      </div>
+                      {i===0&&<span className="absolute top-1 left-1 bg-primary text-white text-[8px] font-bold px-1 py-0.5 rounded">Main</span>}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <p className="text-[10px] text-gray-400 mt-1.5">PNG, JPG, WEBP · Max 5MB · First image = main</p>
+              </div>
+            )}
+            {/* Add more images */}
+            <ImageUploader
+              label="Add More Images"
+              value=""
+              onChange={url => { if(url) set('images', [...form.images, url]); }}
+              hint="Add additional product images"
+            />
           </div>
         </div>
 

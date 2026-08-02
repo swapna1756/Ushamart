@@ -16,6 +16,7 @@ const couponRoutes        = require('./routes/coupon.routes');
 const notificationRoutes  = require('./routes/notification.routes');
 const uploadRoutes        = require('./routes/upload.routes');
 const dashboardRoutes     = require('./routes/dashboard.routes');
+const wishlistRoutes      = require('./routes/wishlist.routes');
 
 const app  = express();
 const PORT = process.env.PORT || 5000;
@@ -64,6 +65,7 @@ app.use('/api/coupons',        couponRoutes);
 app.use('/api/notifications',  notificationRoutes);
 app.use('/api/upload',         uploadRoutes);
 app.use('/api/dashboard',      dashboardRoutes);
+app.use('/api/wishlist',       wishlistRoutes);
 
 // ── Global error handler ──────────────────────────────────────────────────────
 app.use((err, _req, res, _next) => {

@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ShoppingCart, Star, Package } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Star, Package, Heart } from 'lucide-react';
 import { productsApi } from '../services/api';
 import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
 
 export default function ProductDetail() {
   const { id }     = useParams();
   const navigate   = useNavigate();
   const { cart, addItem, removeItem } = useCart();
+  const { has, toggle } = useWishlist();
   const [product,  setProduct]  = useState(null);
   const [loading,  setLoading]  = useState(true);
   const [imgIdx,   setImgIdx]   = useState(0);
@@ -27,6 +29,7 @@ export default function ProductDetail() {
   if (!product) return null;
 
   const qty     = cart[product.id] || 0;
+  const liked   = has(product.id);
   const disc    = product.mrp > product.price ? Math.round(((product.mrp - product.price) / product.mrp) * 100) : 0;
   const savings = product.mrp > product.price ? product.mrp - product.price : 0;
   const imgs    = product.images?.length > 0 ? product.images : [];
@@ -41,6 +44,13 @@ export default function ProductDetail() {
           <ArrowLeft size={18} className="text-gray-600" />
         </button>
         <span className="text-sm font-bold text-gray-900 truncate flex-1">{product.name}</span>
+        {/* Wishlist heart */}
+        <button onClick={() => toggle(product.id)}
+          className="btn-press w-9 h-9 rounded-xl flex items-center justify-center transition"
+          style={{ background: liked ? '#fff0f0' : '#f3f4f6', border: `1.5px solid ${liked ? '#fca5a5' : '#e5e7eb'}` }}
+          aria-label={liked ? 'Remove from wishlist' : 'Add to wishlist'}>
+          <Heart size={16} fill={liked ? '#EE4224' : 'none'} stroke={liked ? '#EE4224' : '#6b7280'} strokeWidth={2}/>
+        </button>
         <button onClick={() => navigate('/cart')}
           className="btn-press relative w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center">
           <ShoppingCart size={16} className="text-gray-600" />

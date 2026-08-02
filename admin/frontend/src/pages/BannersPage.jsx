@@ -3,6 +3,7 @@ import { Plus, Edit2, Trash2, X, CheckCircle, Loader2, Megaphone, ToggleLeft, To
 import { bannersApi } from '../services/api';
 import { useToast } from '../components/Toast';
 import ConfirmDialog from '../components/ConfirmDialog';
+import ImageUploader from '../components/ImageUploader';
 
 function BannerModal({ isOpen, onClose, onSave, editing }) {
   const { addToast } = useToast();
@@ -27,10 +28,12 @@ function BannerModal({ isOpen, onClose, onSave, editing }) {
           <button onClick={onClose} className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center"><X size={14}/></button>
         </div>
         <div className="p-6 space-y-4">
-          <div><label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">Banner Image URL</label>
-            <input value={form.imageUrl} onChange={e=>set('imageUrl',e.target.value)} placeholder="https://…" className={fi}/>
-            {form.imageUrl&&<img src={form.imageUrl} alt="" className="mt-2 h-16 w-full object-cover rounded-xl border border-gray-200" onError={e=>{e.target.src='/logo.png'}}/>}
-          </div>
+          <ImageUploader
+            label="Banner Image"
+            value={form.imageUrl}
+            onChange={url => set('imageUrl', url)}
+            hint="JPG, PNG, WebP · Max 5 MB · Recommended: 800×400px"
+          />
           <div><label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">Title *</label>
             <input value={form.title} onChange={e=>set('title',e.target.value)} placeholder="Banner title" className={fi}/></div>
           <div><label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">Subtitle</label>

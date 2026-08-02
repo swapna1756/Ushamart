@@ -16,6 +16,7 @@ import SpecialOffersPage  from './pages/SpecialOffersPage';
 import BannersPage        from './pages/BannersPage';
 import CouponsPage        from './pages/CouponsPage';
 import NotificationsPage  from './pages/NotificationsPage';
+import LocationManagementPage from './pages/LocationManagementPage';
 import PlaceholderPage    from './pages/PlaceholderPage';
 
 // ── Layout wrapper (Sidebar + content) ───────────────────────────────────────
@@ -59,7 +60,9 @@ export default function App() {
             <Route path="/users"          element={<UsersPage />} />
             <Route path="/inventory"      element={<InventoryPage />} />
             <Route path="/special-offers" element={<SpecialOffersPage />} />
+            <Route path="/banners font"   element={<BannersPage />} />
             <Route path="/banners"        element={<BannersPage />} />
+            <Route path="/location-management" element={<LocationManagementPage />} />
             <Route path="/pincodes"       element={<PincodesPage />} />
             <Route path="/coupons"        element={<CouponsPage />} />
             <Route path="/notifications"  element={<NotificationsPage />} />

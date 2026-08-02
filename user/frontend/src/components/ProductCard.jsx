@@ -1,15 +1,18 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Minus } from 'lucide-react';
+import { Plus, Minus, Heart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
 
 export default function ProductCard({ product }) {
   const { cart, addItem, removeItem } = useCart();
+  const { has, toggle } = useWishlist();
   const navigate = useNavigate();
-  const qty = cart[product.id] || 0;
-  const disc = product.mrp > product.price
+  const qty      = cart[product.id] || 0;
+  const liked    = has(product.id);
+  const disc     = product.mrp > product.price
     ? Math.round(((product.mrp - product.price) / product.mrp) * 100) : 0;
-  const img = product.images?.[0];
+  const img     = product.images?.[0];
   const inStock = product.stock > 0;
 
   return (
@@ -20,6 +23,17 @@ export default function ProductCard({ product }) {
           {disc}% OFF
         </span>
       )}
+
+      {/* Wishlist heart */}
+      <button
+        onClick={e => { e.stopPropagation(); toggle(product.id); }}
+        className="absolute top-2 right-2 z-10 btn-press w-7 h-7 rounded-full flex items-center justify-center transition"
+        style={{ background: liked ? '#fff0f0' : 'rgba(255,255,255,0.9)',
+          border: `1px solid ${liked ? '#fca5a5' : '#e5e7eb'}`,
+          boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}
+        aria-label={liked ? 'Remove from wishlist' : 'Add to wishlist'}>
+        <Heart size={13} fill={liked ? '#EE4224' : 'none'} stroke={liked ? '#EE4224' : '#9ca3af'} strokeWidth={2}/>
+      </button>
 
       {/* Out of stock overlay */}
       {!inStock && (
@@ -36,24 +50,19 @@ export default function ProductCard({ product }) {
         {img
           ? <img src={img} alt={product.name} className="max-h-full max-w-full object-contain"
               onError={e => { e.target.src = '/logo.png'; }} />
-          : <div className="text-4xl">🛒</div>
-        }
+          : <div className="text-4xl">🛒</div>}
       </div>
 
       {/* Info */}
       <div className="flex-1 flex flex-col px-2.5 pb-2.5 pt-2">
         {product.brand && (
-          <span className="text-[8px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">
-            {product.brand}
-          </span>
+          <span className="text-[8px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">{product.brand}</span>
         )}
         <p onClick={() => navigate(`/product/${product.id}`)}
           className="cursor-pointer text-xs font-bold text-gray-900 leading-snug line-clamp-2 mb-1">
           {product.name}
         </p>
-        {product.unit && (
-          <span className="text-[10px] text-gray-400 mb-2">{product.unit}</span>
-        )}
+        {product.unit && <span className="text-[10px] text-gray-400 mb-2">{product.unit}</span>}
 
         {/* Price */}
         <div className="flex items-baseline gap-1.5 mt-auto mb-2">
