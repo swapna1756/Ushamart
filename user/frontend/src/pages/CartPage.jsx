@@ -25,8 +25,40 @@ export default function CartPage() {
   }, []);
 
   const cartItems = Object.entries(cart)
-    .map(([id, qty]) => ({ product: products.find(p => p.id === id), qty }))
-    .filter(({ product }) => product);
+    .map(([id, qty]) => {
+      const [prodId, variantUnit] = id.split('::');
+      const p = products.find(p => p.id === prodId);
+      if (!p) return null;
+      
+      let price = p.price;
+      let mrp = p.mrp || p.price;
+      let unit = p.unit;
+      let stock = p.stock;
+      
+      if (variantUnit) {
+        const variant = (p.variantList || []).find(v => v.unit === variantUnit);
+        if (variant) {
+          price = variant.price;
+          mrp = variant.mrp || variant.price;
+          unit = variant.unit;
+          stock = variant.stock;
+        }
+      }
+      
+      const variantProduct = {
+        ...p,
+        id, // keep the full cart key as product.id for cart list operations
+        baseProductId: prodId,
+        price,
+        mrp,
+        unit,
+        stock,
+        variantUnit
+      };
+      
+      return { product: variantProduct, qty };
+    })
+    .filter(Boolean);
 
   const subtotal = cartItems.reduce((s, { product, qty }) => s + product.price * qty, 0);
   const delivery = subtotal >= 299 || subtotal === 0 ? 0 : 40;

@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle, Loader2 } from 'lucide-react';
 import { productsApi, categoriesApi, pincodesApi } from '../services/api';
 import { useToast } from '../components/Toast';
 import ImageUploader from '../components/ImageUploader';
-import { formatINR } from '../utils/currency';
 
-export default function ProductEditPage() {
-  const { id } = useParams();
+export default function ProductAddPage() {
   const navigate = useNavigate();
   const { addToast } = useToast();
 
@@ -28,35 +26,30 @@ export default function ProductEditPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [cRes, pinsRes, pRes] = await Promise.all([
+        const [cRes, pinsRes] = await Promise.all([
           categoriesApi.getAll(),
-          pincodesApi.getAll(),
-          productsApi.getById(id)
+          pincodesApi.getAll()
         ]);
 
-        setCategories((cRes.data || []).filter(c => c.status === 'published'));
+        const activeCats = (cRes.data || []).filter(c => c.status === 'published');
+        setCategories(activeCats);
         setPincodes(pinsRes.data || []);
         
-        if (pRes.data) {
-          setForm({ 
-            ...EMPTY, 
-            ...pRes.data, 
-            pincodesAvailable: pRes.data.pincodesAvailable || [] 
-          });
-        } else {
-          addToast('Product not found', 'error');
-          navigate('/products');
-        }
+        setForm(p => ({
+          ...p,
+          sku: 'UM-' + Math.random().toString(36).substring(2,8).toUpperCase(),
+          category: activeCats[0]?.id || '',
+          pincodesAvailable: (pinsRes.data || []).map(p => p.code || p.id || p)
+        }));
       } catch (e) {
         addToast(e.message, 'error');
-        navigate('/products');
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [id]);
+  }, []);
 
   const set = (k, v) => setForm(p => {
     const n = { ...p, [k]: v };
@@ -76,8 +69,9 @@ export default function ProductEditPage() {
     
     setSaving(true);
     try {
-      await productsApi.update(id, form);
-      addToast('Product updated successfully', 'success');
+      const productId = 'prod_' + Math.random().toString(36).substring(2, 10);
+      await productsApi.create({ ...form, id: productId });
+      addToast('Product created successfully', 'success');
       navigate('/products');
     } catch (e) {
       addToast(e.message, 'error');
@@ -106,12 +100,12 @@ export default function ProductEditPage() {
           </button>
           <div>
             <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Product Catalog</span>
-            <h1 className="text-lg font-semibold text-gray-900 leading-tight">Edit Product</h1>
+            <h1 className="text-lg font-semibold text-gray-900 leading-tight">New Product</h1>
           </div>
         </div>
         <button onClick={handleSave} disabled={saving} className="btn-press px-4 py-2 bg-primary hover:bg-primary-hover text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-sm transition disabled:opacity-50">
           {saving ? <Loader2 size={13} className="spin" /> : <CheckCircle size={13} />}
-          {saving ? 'Saving...' : 'Save Updates'}
+          {saving ? 'Creating...' : 'Create Product'}
         </button>
       </div>
 

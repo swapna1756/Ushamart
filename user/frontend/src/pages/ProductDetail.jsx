@@ -16,10 +16,16 @@ export default function ProductDetail() {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [imgIdx, setImgIdx] = useState(0);
+  const [selectedVariant, setSelectedVariant] = useState('');
 
   useEffect(() => {
     productsApi.getById(id)
-      .then(r => setProduct(r.data))
+      .then(r => {
+        setProduct(r.data);
+        if (r.data && r.data.variantList && r.data.variantList.length > 0) {
+          setSelectedVariant(r.data.variantList[0].unit);
+        }
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [id]);
@@ -39,12 +45,20 @@ export default function ProductDetail() {
     </div>
   );
 
-  const qty = cart[product.id] || 0;
+  // Variant overrides
+  const activeVariant = (product.variantList || []).find(v => v.unit === selectedVariant);
+  const price = activeVariant ? activeVariant.price : product.price;
+  const mrp = activeVariant ? (activeVariant.mrp || activeVariant.price) : product.mrp;
+  const stock = activeVariant ? activeVariant.stock : product.stock;
+  const unit = activeVariant ? activeVariant.unit : product.unit;
+  const cartKey = selectedVariant ? `${product.id}::${selectedVariant}` : product.id;
+
+  const qty = cart[cartKey] || 0;
   const liked = has(product.id);
-  const inStock = product.stock > 0;
-  const disc = product.mrp > product.price
-    ? Math.round(((product.mrp - product.price) / product.mrp) * 100) : 0;
-  const savings = Math.max(0, product.mrp - product.price);
+  const inStock = stock > 0;
+  const disc = mrp > price
+    ? Math.round(((mrp - price) / mrp) * 100) : 0;
+  const savings = Math.max(0, mrp - price);
 
   const imgs = Array.isArray(product.images) ? product.images : [];
 
@@ -122,13 +136,28 @@ export default function ProductDetail() {
             </span>
           )}
           <h1 className="text-xl md:text-2xl font-semibold text-gray-900 leading-tight">{product.name}</h1>
-          {product.unit && <p className="text-sm text-gray-500">{product.unit}</p>}
+          {unit && <p className="text-sm text-gray-500">{unit}</p>}
+
+          {/* Variants Selectable buttons */}
+          {product.variantList && product.variantList.length > 0 && (
+            <div className="space-y-2 pt-2 pb-1">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">Select Size:</span>
+              <div className="flex flex-wrap gap-2">
+                {product.variantList.map(v => (
+                  <button key={v.unit} onClick={() => setSelectedVariant(v.unit)}
+                    className={`px-3.5 py-2 rounded-xl border text-xs font-bold transition-all duration-150 ${selectedVariant === v.unit ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}>
+                    {v.unit}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Stock status */}
           <div className="flex items-center gap-2">
             <span className={`w-2 h-2 rounded-full ${inStock ? 'bg-primary' : 'bg-red-500'}`} />
             <span className={`text-sm font-semibold ${inStock ? 'text-primary' : 'text-red-500'}`}>
-              {inStock ? `In Stock • ${product.stock} units` : 'Out of Stock'}
+              {inStock ? `In Stock • ${stock} units` : 'Out of Stock'}
             </span>
           </div>
 
@@ -137,14 +166,14 @@ export default function ProductDetail() {
             <div className="flex items-center gap-4">
               <div>
                 <p className="text-xs text-gray-400 mb-0.5">Our Price</p>
-                <p className="text-2xl font-bold text-primary">{formatINR(product.price)}</p>
+                <p className="text-2xl font-bold text-primary">{formatINR(price)}</p>
               </div>
-              {product.mrp > product.price && (
+              {mrp > price && (
                 <>
                   <div className="w-px h-12 bg-gray-200" />
                   <div>
                     <p className="text-xs text-gray-400 mb-0.5">MRP</p>
-                    <p className="text-lg font-semibold text-gray-400 line-through">{formatINR(product.mrp)}</p>
+                    <p className="text-lg font-semibold text-gray-400 line-through">{formatINR(mrp)}</p>
                   </div>
                   <div className="w-px h-12 bg-gray-200" />
                   <div>
@@ -184,12 +213,12 @@ export default function ProductDetail() {
           <div className="hidden md:flex items-center gap-3 pt-4 border-t border-gray-100">
             {qty > 0 && (
               <div className="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2 flex-shrink-0">
-                <button onClick={() => removeItem(product.id)} className="btn-press w-7 h-7 flex items-center justify-center font-semibold text-base text-gray-700">-</button>
+                <button onClick={() => removeItem(cartKey)} className="btn-press w-7 h-7 flex items-center justify-center font-semibold text-base text-gray-700">-</button>
                 <span className="text-sm font-semibold text-primary w-5 text-center">{qty}</span>
-                <button onClick={() => addItem(product.id)} className="btn-press w-7 h-7 flex items-center justify-center font-semibold text-base text-gray-700">+</button>
+                <button onClick={() => addItem(cartKey)} className="btn-press w-7 h-7 flex items-center justify-center font-semibold text-base text-gray-700">+</button>
               </div>
             )}
-            <button disabled={!inStock} onClick={() => { if (inStock && qty === 0) addItem(product.id); }}
+            <button disabled={!inStock} onClick={() => { if (inStock && qty === 0) addItem(cartKey); }}
               className="btn-press flex-1 py-3.5 rounded-2xl text-sm font-bold text-white flex items-center justify-center gap-2 transition disabled:opacity-50"
               style={{
                 background: qty > 0 ? '#E7F5ED' : '#1A9E48',
@@ -202,7 +231,7 @@ export default function ProductDetail() {
             </button>
             {inStock && (
               <button onClick={() => {
-                const buyNowData = { productId: product.id, quantity: Math.max(1, qty || 1), product };
+                const buyNowData = { productId: cartKey, quantity: Math.max(1, qty || 1), product: { ...product, price, mrp, unit, stock } };
                 try { sessionStorage.setItem('ushamart_buynow', JSON.stringify(buyNowData)); } catch(e){}
                 navigate('/checkout', { state: { buyNow: buyNowData } });
               }}
@@ -220,13 +249,13 @@ export default function ProductDetail() {
         <div className="max-w-md mx-auto flex items-center gap-2.5">
           {qty > 0 && (
             <div className="flex items-center gap-1.5 bg-gray-100 rounded-xl px-2 py-1.5 flex-shrink-0">
-              <button onClick={() => removeItem(product.id)} className="btn-press w-7 h-7 flex items-center justify-center font-bold text-base text-gray-700">-</button>
+              <button onClick={() => removeItem(cartKey)} className="btn-press w-7 h-7 flex items-center justify-center font-bold text-base text-gray-700">-</button>
               <span className="text-xs font-bold text-primary w-4 text-center">{qty}</span>
-              <button onClick={() => addItem(product.id)} className="btn-press w-7 h-7 flex items-center justify-center font-bold text-base text-gray-700">+</button>
+              <button onClick={() => addItem(cartKey)} className="btn-press w-7 h-7 flex items-center justify-center font-bold text-base text-gray-700">+</button>
             </div>
           )}
 
-          <button disabled={!inStock} onClick={() => { if (inStock && qty === 0) addItem(product.id); }}
+          <button disabled={!inStock} onClick={() => { if (inStock && qty === 0) addItem(cartKey); }}
             className="btn-press flex-1 py-3 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-1.5 transition disabled:opacity-50 min-h-[44px]"
             style={{
               background: qty > 0 ? '#E7F5ED' : '#1A9E48',
@@ -240,7 +269,7 @@ export default function ProductDetail() {
 
           {inStock && (
             <button onClick={() => {
-              const buyNowData = { productId: product.id, quantity: Math.max(1, qty || 1), product };
+              const buyNowData = { productId: cartKey, quantity: Math.max(1, qty || 1), product: { ...product, price, mrp, unit, stock } };
               try { sessionStorage.setItem('ushamart_buynow', JSON.stringify(buyNowData)); } catch(e){}
               navigate('/checkout', { state: { buyNow: buyNowData } });
             }}

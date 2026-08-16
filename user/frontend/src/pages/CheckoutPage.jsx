@@ -203,11 +203,39 @@ export default function CheckoutPage() {
   const items = useMemo(() => {
     return Object.entries(requestedMap)
       .map(([id, qty]) => {
-        let product = products.find(p => p.id === id);
-        if (!product && singleBuyNowProduct && singleBuyNowProduct.id === id) {
-          product = singleBuyNowProduct;
+        const [prodId, variantUnit] = id.split('::');
+        let p = products.find(p => p.id === prodId);
+        if (!p && singleBuyNowProduct && (singleBuyNowProduct.id === id || singleBuyNowProduct.id === prodId)) {
+          p = singleBuyNowProduct;
         }
-        return { product, qty };
+        if (!p) return null;
+        
+        let price = p.price;
+        let mrp = p.mrp || p.price;
+        let unit = p.unit;
+        let stock = p.stock;
+        
+        if (variantUnit) {
+          const variant = (p.variantList || []).find(v => v.unit === variantUnit);
+          if (variant) {
+            price = variant.price;
+            mrp = variant.mrp || variant.price;
+            unit = variant.unit;
+            stock = variant.stock;
+          }
+        }
+        
+        const variantProduct = {
+          ...p,
+          id, // keep the full key for item key mappings
+          baseProductId: prodId,
+          price,
+          mrp,
+          unit,
+          stock,
+          variantUnit
+        };
+        return { product: variantProduct, qty };
       })
       .filter(x => Boolean(x.product));
   }, [requestedMap, products, singleBuyNowProduct]);

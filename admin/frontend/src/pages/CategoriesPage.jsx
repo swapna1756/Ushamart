@@ -112,14 +112,14 @@ export default function CategoriesPage() {
  <div className="flex items-center justify-between px-4 sm:px-6 py-5 bg-white border-b border-gray-100 flex-shrink-0">
  <div><h1 className="text-page-title text-gray-900">Categories</h1>
  <p className="text-xs text-muted mt-0.5">{cats.length} categories · {cats.filter(c=>c.status==='published').length} active</p></div>
- <button onClick={()=>{setEditing(null);setModalOpen(true);}} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium text-white bg-primary hover:bg-primary-hover shadow-md transition">
+ <button onClick={()=>navigate('/categories/add')} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium text-white bg-primary hover:bg-primary-hover shadow-md transition">
  <Plus size={14}/> Add Category</button>
  </div>
  <div className="flex-1 overflow-y-auto p-4 sm:p-6">
  {cats.length===0 ? (
  <div className="flex flex-col items-center justify-center py-20 text-center">
  <p className="text-sm font-medium text-gray-600">No categories yet</p>
- <button onClick={()=>{setEditing(null);setModalOpen(true);}} className="mt-4 flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-xs font-medium rounded-xl"><Plus size={12}/>Create Category</button>
+ <button onClick={()=>navigate('/categories/add')} className="mt-4 flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-xs font-medium rounded-xl"><Plus size={12}/>Create Category</button>
  </div>
  ) : (
  <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

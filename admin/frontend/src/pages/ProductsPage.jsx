@@ -188,14 +188,15 @@ function ProductModal({ isOpen, onClose, onSave, editing, categories, pincodes }
  <div><label className="text-xs font-medium text-label block mb-1.5">Category *</label>
  <select value={form.category} onChange={e=>set('category',e.target.value)} className={fi+' cursor-pointer'}>
  <option value="">Selectâ€¦</option>
+ <option value="">Select…</option>
  {categories.map(c=><option key={c.id} value={c.id}>{c.emojiIcon||''} {c.name}</option>)}
  </select></div>
  <div><label className="text-xs font-medium text-label block mb-1.5">Unit / Size</label>
- <input value={form.unit} onChange={e=>set('unit',e.target.value)} placeholder="500g, 1L, Packâ€¦" className={fi}/></div>
+ <input value={form.unit} onChange={e=>set('unit',e.target.value)} placeholder="500g, 1L, Pack…" className={fi}/></div>
  </div>
 
  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
- {[['MRP (â‚¹)','mrp'],['Price (â‚¹)','price'],['Stock','stock']].map(([lbl,k])=>(
+ {[['MRP (₹)','mrp'],['Price (₹)','price'],['Stock','stock']].map(([lbl,k])=>(
  <div key={k}><label className="text-xs font-medium text-label block mb-1.5">{lbl}</label>
  <input type="number" min="0" value={form[k]} onChange={e=>set(k,e.target.value)} className={fi}/></div>
  ))}
@@ -408,9 +409,9 @@ export default function ProductsPage() {
  <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-4 sm:py-5 bg-white border-b border-gray-100 flex-shrink-0">
  <div className="min-w-0">
  <h1 className="hidden lg:block text-page-title text-gray-900">Products</h1>
- <p className="text-xs text-muted mt-0.5">{products.length} products Â· {products.filter(p=>p.status==='published').length} published</p>
+ <p className="text-xs text-muted mt-0.5">{products.length} products · {products.filter(p=>p.status==='published').length} published</p>
  </div>
- <button onClick={()=>{setEditing(null);setModalOpen(true);}}
+ <button onClick={()=>navigate('/products/add')}
  className="flex items-center gap-1.5 px-3 sm:px-4 py-2.5 sm:py-2 rounded-xl text-xs font-medium text-white bg-primary hover:bg-primary-hover shadow-md transition flex-shrink-0">
  <Plus size={14}/> Add Product
  </button>
@@ -420,7 +421,7 @@ export default function ProductsPage() {
  <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-3 px-4 sm:px-6 py-3 bg-white border-b border-gray-100 flex-shrink-0">
  <div className="relative min-w-0">
  <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
- <input value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}} placeholder="Search products, brands, SKUâ€¦"
+ <input value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}} placeholder="Search products, brands, SKU..."
  className="w-full pl-8 pr-3 py-2.5 sm:py-2 text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 bg-white"/>
  </div>
  <select value={filterStatus} onChange={e=>{setFilterStatus(e.target.value);setPage(1);}} className="w-full sm:w-auto px-3 py-2.5 sm:py-2 text-xs border border-gray-200 rounded-xl bg-white font-medium text-gray-700">
@@ -441,7 +442,7 @@ export default function ProductsPage() {
  {paged.length === 0 ? (
  <div className="bg-white rounded-2xl border border-gray-100 py-12 px-4 text-center text-gray-400">
  <p className="text-xs font-semibold">No products found</p>
- {products.length === 0 && <button onClick={()=>{setEditing(null);setModalOpen(true);}} className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-xs font-medium rounded-xl"><Plus size={12}/> Add first product</button>}
+ {products.length === 0 && <button onClick={()=>navigate('/products/add')} className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-xs font-medium rounded-xl"><Plus size={12}/> Add first product</button>}
  </div>
  ) : paged.map(prod => (
  <ProductCard
@@ -478,7 +479,7 @@ export default function ProductsPage() {
  {paged.length === 0 ? (
  <tr><td colSpan={11} className="text-center py-16 text-gray-400">
  <p className="text-xs font-semibold">No products found</p>
- {products.length === 0 && <button onClick={()=>{setEditing(null);setModalOpen(true);}} className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-xs font-medium rounded-xl"><Plus size={12}/> Add first product</button>}
+ {products.length === 0 && <button onClick={()=>navigate('/products/add')} className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-xs font-medium rounded-xl"><Plus size={12}/> Add first product</button>}
  </td></tr>
  ) : paged.map(prod => {
  const disc = prod.mrp > prod.price ? Math.round(((prod.mrp-prod.price)/prod.mrp)*100) : 0;
@@ -492,14 +493,14 @@ export default function ProductsPage() {
  </td>
  <td className="px-3 py-3 max-w-[150px]">
  <p className="font-medium text-gray-800 truncate">{prod.name}</p>
- <p className="text-xs text-muted font-mono mt-0.5">{prod.sku||'â€”'}</p>
+ <p className="text-xs text-muted font-mono mt-0.5">{prod.sku||'—'}</p>
  </td>
- <td className="px-3 py-3 text-gray-500">{prod.brand||'â€”'}</td>
+ <td className="px-3 py-3 text-gray-500">{prod.brand||'—'}</td>
  <td className="px-3 py-3 text-gray-500">{getCatName(prod.category)}</td>
- <td className="px-3 py-3 text-gray-400">{prod.unit||'â€”'}</td>
- <td className="px-3 py-3 text-right text-gray-500">{prod.mrp?formatINR(prod.mrp):'â€”'}</td>
- <td className="px-3 py-3 text-right font-medium text-gray-800">{prod.price?formatINR(prod.price):'â€”'}</td>
- <td className="px-3 py-3 text-center">{disc>0?<span className="text-[10px] font-medium text-green-700 bg-green-50 px-1.5 py-0.5 rounded-full border border-green-200">{disc}%</span>:<span className="text-gray-300">â€”</span>}</td>
+ <td className="px-3 py-3 text-gray-400">{prod.unit||'—'}</td>
+ <td className="px-3 py-3 text-right text-gray-500">{prod.mrp?formatINR(prod.mrp):'—'}</td>
+ <td className="px-3 py-3 text-right font-medium text-gray-800">{prod.price?formatINR(prod.price):'—'}</td>
+ <td className="px-3 py-3 text-center">{disc>0?<span className="text-[10px] font-medium text-green-700 bg-green-50 px-1.5 py-0.5 rounded-full border border-green-200">{disc}%</span>:<span className="text-gray-300">—</span>}</td>
  <td className="px-3 py-3 text-center"><StockBadge stock={prod.stock}/></td>
  <td className="px-3 py-3 text-center"><StatusBadge status={prod.status}/></td>
  <td className="px-3 py-3">

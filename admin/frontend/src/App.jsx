@@ -22,6 +22,8 @@ import LocationManagementPage from './pages/LocationManagementPage';
 import PlaceholderPage from './pages/PlaceholderPage';
 import CategoryEditPage from './pages/CategoryEditPage';
 import ProductEditPage from './pages/ProductEditPage';
+import CategoryAddPage from './pages/CategoryAddPage';
+import ProductAddPage from './pages/ProductAddPage';
 
 // ── Layout wrapper (Sidebar + content) ───────────────────────────────────────
 const primaryMobileNav = ['/dashboard', '/products', '/orders', '/inventory'];
@@ -130,8 +132,10 @@ export default function App() {
  <Route index element={<Navigate to="/dashboard" replace />} />
  <Route path="/dashboard" element={<DashboardPage />} />
  <Route path="/products" element={<ProductsPage />} />
+ <Route path="/products/add" element={<ProductAddPage />} />
  <Route path="/products/edit/:id" element={<ProductEditPage />} />
  <Route path="/categories" element={<CategoriesPage />} />
+ <Route path="/categories/add" element={<CategoryAddPage />} />
  <Route path="/categories/edit/:id" element={<CategoryEditPage />} />
  <Route path="/orders" element={<OrdersPage />} />
  <Route path="/users" element={<UsersPage />} />
