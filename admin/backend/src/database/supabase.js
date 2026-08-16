@@ -4,8 +4,16 @@
  */
 const { createClient } = require('@supabase/supabase-js');
 
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://xkooguvxhhempfpcmrjd.supabase.co';
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET || process.env.SUPABASE_KEY || 'sb_publishable_dOX9o2ZPgnyzL07orLNbnA_f_KD4Aqx';
+let SUPABASE_URL = process.env.SUPABASE_URL || 'https://xkooguvxhhempfpcmrjd.supabase.co';
+let SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET || process.env.SUPABASE_KEY || 'sb_publishable_dOX9o2ZPgnyzL07orLNbnA_f_KD4Aqx';
+
+// Detect and override placeholder values
+if (!SUPABASE_URL || SUPABASE_URL.includes('YOUR_') || SUPABASE_URL.includes('your-') || SUPABASE_URL.includes('project-id')) {
+  SUPABASE_URL = 'https://xkooguvxhhempfpcmrjd.supabase.co';
+}
+if (!SUPABASE_KEY || SUPABASE_KEY.includes('YOUR_') || SUPABASE_KEY.includes('your-') || SUPABASE_KEY.includes('sb_publishable_YOUR') || SUPABASE_KEY.includes('REPLACE')) {
+  SUPABASE_KEY = 'sb_publishable_dOX9o2ZPgnyzL07orLNbnA_f_KD4Aqx';
+}
 
 const isConfigured = !!(
   SUPABASE_URL &&
