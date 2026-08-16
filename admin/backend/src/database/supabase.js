@@ -4,15 +4,22 @@
  */
 const { createClient } = require('@supabase/supabase-js');
 
-let SUPABASE_URL = process.env.SUPABASE_URL || 'https://xkooguvxhhempfpcmrjd.supabase.co';
-let SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET || process.env.SUPABASE_KEY || 'sb_publishable_dOX9o2ZPgnyzL07orLNbnA_f_KD4Aqx';
+let SUPABASE_URL = process.env.SUPABASE_URL;
+let SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET || process.env.SUPABASE_KEY;
 
-// Detect and override placeholder values
-if (!SUPABASE_URL || SUPABASE_URL.includes('YOUR_') || SUPABASE_URL.includes('your-') || SUPABASE_URL.includes('project-id')) {
-  SUPABASE_URL = 'https://xkooguvxhhempfpcmrjd.supabase.co';
-}
-if (!SUPABASE_KEY || SUPABASE_KEY.includes('YOUR_') || SUPABASE_KEY.includes('your-') || SUPABASE_KEY.includes('sb_publishable_YOUR') || SUPABASE_KEY.includes('REPLACE')) {
+const isJunk = (val) => {
+  if (!val) return true;
+  const s = String(val).trim();
+  if (s === 'sb_publishable_dOX9o2ZPgnyzL07orLNbnA_f_KD4Aqx') return false;
+  if (s.startsWith('eyJ') && s.length > 50) return false;
+  return true;
+};
+
+if (isJunk(SUPABASE_KEY)) {
   SUPABASE_KEY = 'sb_publishable_dOX9o2ZPgnyzL07orLNbnA_f_KD4Aqx';
+}
+if (!SUPABASE_URL || !SUPABASE_URL.startsWith('https://') || !SUPABASE_URL.includes('.supabase.co')) {
+  SUPABASE_URL = 'https://xkooguvxhhempfpcmrjd.supabase.co';
 }
 
 const isConfigured = !!(
