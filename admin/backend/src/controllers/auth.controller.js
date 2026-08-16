@@ -166,7 +166,7 @@ async function firebaseUserLogin(req, res) {
 
     if (!user) {
       user = {
-        id: firebaseUid, firebaseUid, phone: phone || decoded.phone_number || '',
+        id: firebaseUid, phone: phone || decoded.phone_number || '',
         name: name || decoded.name || 'Customer', email, role: 'customer', status: 'active',
         totalOrders: 0, totalSpent: 0, addressText: '', pincode: '',
         registeredAt: now, lastLogin: now, createdAt: now, updatedAt: now,
@@ -174,7 +174,6 @@ async function firebaseUserLogin(req, res) {
       await db.insert('users', user);
     } else {
       await db.update('users', user.id, {
-        firebaseUid: user.firebaseUid || firebaseUid,
         email: user.email || email,
         name: user.name || name || decoded.name || user.name,
         phone: user.phone || phone || decoded.phone_number || user.phone,
