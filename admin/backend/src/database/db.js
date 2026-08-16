@@ -110,24 +110,57 @@ async function sbDelete(table, id) {
 // ── Unified db API (async-first; sync JSON as fallback) ───────────────────────
 const db = {
   async getAll(collection) {
-    return supabaseReady ? sbGetAll(collection) : readLocal(collection);
+    if (supabaseReady) {
+      try {
+        return await sbGetAll(collection);
+      } catch (err) {
+        console.error(`[DB Fallback] getAll(${collection}) failed: ${err.message}. Falling back to local JSON.`);
+      }
+    }
+    return readLocal(collection);
   },
   async getById(collection, id) {
-    return supabaseReady ? sbGetById(collection, id)
-      : (readLocal(collection).find(d => d.id === id) || null);
+    if (supabaseReady) {
+      try {
+        return await sbGetById(collection, id);
+      } catch (err) {
+        console.error(`[DB Fallback] getById(${collection}, ${id}) failed: ${err.message}. Falling back to local JSON.`);
+      }
+    }
+    return (readLocal(collection).find(d => d.id === id) || null);
   },
   async find(collection, predicate) {
-    const rows = supabaseReady ? await sbGetAll(collection) : readLocal(collection);
+    if (supabaseReady) {
+      try {
+        const rows = await sbGetAll(collection);
+        return rows.filter(predicate);
+      } catch (err) {
+        console.error(`[DB Fallback] find(${collection}) failed: ${err.message}. Falling back to local JSON.`);
+      }
+    }
+    const rows = readLocal(collection);
     return rows.filter(predicate);
   },
   async insert(collection, doc) {
-    if (supabaseReady) return sbInsert(collection, doc);
+    if (supabaseReady) {
+      try {
+        return await sbInsert(collection, doc);
+      } catch (err) {
+        console.error(`[DB Fallback] insert(${collection}) failed: ${err.message}. Falling back to local JSON.`);
+      }
+    }
     const docs  = readLocal(collection);
     const entry = { ...doc, createdAt: doc.createdAt||Date.now(), updatedAt: Date.now() };
     docs.push(entry); writeLocal(collection, docs); return entry;
   },
   async update(collection, id, fields) {
-    if (supabaseReady) return sbUpdate(collection, id, fields);
+    if (supabaseReady) {
+      try {
+        return await sbUpdate(collection, id, fields);
+      } catch (err) {
+        console.error(`[DB Fallback] update(${collection}, ${id}) failed: ${err.message}. Falling back to local JSON.`);
+      }
+    }
     const docs = readLocal(collection);
     const idx  = docs.findIndex(d => d.id === id);
     if (idx === -1) return null;
@@ -135,7 +168,13 @@ const db = {
     writeLocal(collection, docs); return docs[idx];
   },
   async upsert(collection, id, doc) {
-    if (supabaseReady) return sbUpsert(collection, id, doc);
+    if (supabaseReady) {
+      try {
+        return await sbUpsert(collection, id, doc);
+      } catch (err) {
+        console.error(`[DB Fallback] upsert(${collection}, ${id}) failed: ${err.message}. Falling back to local JSON.`);
+      }
+    }
     const docs  = readLocal(collection);
     const idx   = docs.findIndex(d => d.id === id);
     const entry = { ...doc, id, updatedAt: Date.now() };
@@ -144,7 +183,13 @@ const db = {
     writeLocal(collection, docs); return entry;
   },
   async delete(collection, id) {
-    if (supabaseReady) return sbDelete(collection, id);
+    if (supabaseReady) {
+      try {
+        return await sbDelete(collection, id);
+      } catch (err) {
+        console.error(`[DB Fallback] delete(${collection}, ${id}) failed: ${err.message}. Falling back to local JSON.`);
+      }
+    }
     const docs     = readLocal(collection);
     const filtered = docs.filter(d => d.id !== id);
     if (filtered.length === docs.length) return false;
@@ -152,23 +197,31 @@ const db = {
   },
   async count(collection, predicate) {
     if (supabaseReady) {
-      const { count, error } = await supabase.from(collection)
-        .select('*', { count:'exact', head:true });
-      if (error) throw new Error(error.message);
-      return count || 0;
+      try {
+        const { count, error } = await supabase.from(collection)
+          .select('*', { count:'exact', head:true });
+        if (error) throw new Error(error.message);
+        return count || 0;
+      } catch (err) {
+        console.error(`[DB Fallback] count(${collection}) failed: ${err.message}. Falling back to local JSON.`);
+      }
     }
     const docs = readLocal(collection);
     return predicate ? docs.filter(predicate).length : docs.length;
   },
   async replaceAll(collection, docs) {
     if (supabaseReady) {
-      await supabase.from(collection).delete().neq('id', '___never___');
-      if (docs.length > 0) {
-        const rows = docs.map(d => toSnake({ ...d, updatedAt: Date.now() }));
-        const { error } = await supabase.from(collection).insert(rows);
-        if (error) throw new Error(error.message);
+      try {
+        await supabase.from(collection).delete().neq('id', '___never___');
+        if (docs.length > 0) {
+          const rows = docs.map(d => toSnake({ ...d, updatedAt: Date.now() }));
+          const { error } = await supabase.from(collection).insert(rows);
+          if (error) throw new Error(error.message);
+        }
+        return;
+      } catch (err) {
+        console.error(`[DB Fallback] replaceAll(${collection}) failed: ${err.message}. Falling back to local JSON.`);
       }
-      return;
     }
     writeLocal(collection, docs);
   },
