@@ -4,8 +4,8 @@
  */
 const { createClient } = require('@supabase/supabase-js');
 
-const SUPABASE_URL = process.env.SUPABASE_URL || '';
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET || process.env.SUPABASE_KEY || '';
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://xkooguvxhhempfpcmrjd.supabase.co';
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET || process.env.SUPABASE_KEY || 'sb_publishable_dOX9o2ZPgnyzL07orLNbnA_f_KD4Aqx';
 
 const isConfigured = !!(
   SUPABASE_URL &&
