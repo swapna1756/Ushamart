@@ -97,6 +97,26 @@ const TABLES = [
     );`
   },
   {
+    name: 'user_addresses',
+    sql: `CREATE TABLE IF NOT EXISTS public.user_addresses (
+      id TEXT PRIMARY KEY,
+      user_id TEXT,
+      full_name TEXT NOT NULL,
+      mobile_number TEXT NOT NULL,
+      house TEXT NOT NULL,
+      street TEXT NOT NULL,
+      landmark TEXT,
+      state TEXT NOT NULL,
+      district TEXT NOT NULL,
+      city TEXT,
+      pincode TEXT NOT NULL,
+      delivery_instructions TEXT,
+      address_text TEXT,
+      created_at BIGINT DEFAULT (EXTRACT(EPOCH FROM NOW())*1000)::BIGINT,
+      updated_at BIGINT DEFAULT (EXTRACT(EPOCH FROM NOW())*1000)::BIGINT
+    );`
+  },
+  {
     name: 'banners',
     sql: `CREATE TABLE IF NOT EXISTS public.banners (
       id TEXT PRIMARY KEY, title TEXT NOT NULL, subtitle TEXT,
