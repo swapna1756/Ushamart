@@ -107,13 +107,16 @@ export default function CheckoutPage() {
         setProducts(fetchedProducts);
 
         if (buyNowInfo?.productId) {
+          const [baseId] = buyNowInfo.productId.split('::');
           if (buyNowInfo.product) {
             setSingleBuyNowProduct(buyNowInfo.product);
           } else {
-            const foundInAll = fetchedProducts.find(p => p.id === buyNowInfo.productId);
-            if (!foundInAll) {
+            const foundInAll = fetchedProducts.find(p => p.id === baseId);
+            if (foundInAll) {
+              setSingleBuyNowProduct(foundInAll);
+            } else {
               try {
-                const singleRes = await productsApi.getById(buyNowInfo.productId);
+                const singleRes = await productsApi.getById(baseId);
                 if (singleRes?.data) setSingleBuyNowProduct(singleRes.data);
               } catch (e) {
                 console.error("Failed to fetch buyNow product", e);
@@ -170,7 +173,9 @@ export default function CheckoutPage() {
       return null;
     }
     try {
-      const idToken = await user.getIdToken().catch(() => 'mock_token_' + user.uid);
+      const idToken = typeof user.getIdToken === 'function'
+        ? await user.getIdToken().catch(() => 'mock_token_' + (user.uid || user.id))
+        : 'mock_token_' + (user.uid || user.id);
       const res = await authApi.firebaseLogin({
         idToken,
         name: profile?.full_name || user.displayName || 'Customer',
@@ -381,6 +386,26 @@ export default function CheckoutPage() {
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 text-primary spin" />
           <p className="text-sm font-medium text-gray-600">Preparing checkout...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !products.length) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4 text-center">
+        <div className="bg-white p-8 rounded-2xl border border-gray-150 shadow-sm max-w-sm w-full space-y-4">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto" />
+          <h2 className="text-base font-semibold text-gray-800">Unable to load checkout</h2>
+          <p className="text-xs text-gray-500">{error}</p>
+          <div className="flex gap-3 pt-2">
+            <button onClick={() => navigate('/cart')} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-xs font-semibold hover:bg-gray-50 transition">
+              Go Back to Cart
+            </button>
+            <button onClick={() => window.location.reload()} className="flex-1 py-2.5 rounded-xl bg-primary text-white text-xs font-semibold shadow-md shadow-primary/20 hover:bg-primary/90 transition">
+              Try Again
+            </button>
+          </div>
         </div>
       </div>
     );
