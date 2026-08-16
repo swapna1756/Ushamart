@@ -1,0 +1,36 @@
+# ── Environment files — NEVER commit secrets ─────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Node modules (all levels) ─────────────────────────────────────────────────
+**/node_modules/
+
+# ── Build output ──────────────────────────────────────────────────────────────
+**/dist/
+**/.vite/
+**/.vite-temp/
+
+# ── Local JSON database (runtime data — not for version control) ─────────────
+admin/backend/src/database/data/*.json
+!admin/backend/src/database/data/.gitkeep
+
+# ── Uploaded images (runtime) ─────────────────────────────────────────────────
+admin/backend/uploads/*
+!admin/backend/uploads/.gitkeep
+
+# ── Firebase service account ──────────────────────────────────────────────────
+**/firebase-service-account.json
+**/serviceAccountKey.json
+
+# ── OS / Editor ───────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.swp
+.vscode/
+.idea/
+
+# ── Legacy monorepo node_modules ──────────────────────────────────────────────
+Ushamart/node_modules/

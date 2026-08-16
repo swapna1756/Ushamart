@@ -1,0 +1,41 @@
+# Netlify Configuration for UshaMart Admin Frontend
+# ─────────────────────────────────────────────────────────────────────────────
+# This file lives at admin/frontend/netlify.toml inside the GitHub repo.
+# The GitHub repo root is the working directory for Netlify.
+# 'base' is the path to this app from the repo root.
+
+[build]
+# Path to the frontend app from the GitHub repo root.
+# GitHub repo structure: admin/frontend/ is the React app.
+base    = "admin/frontend"
+
+# Install dependencies and build with Vite
+command = "npm ci && npm run build"
+
+# Vite outputs to dist/ — relative to 'base' above
+publish = "dist"
+
+# ── Production environment variables ─────────────────────────────────────────
+# VITE_API_URL: bare Render origin — NO trailing slash, NO /api suffix.
+# The api.js client appends /api automatically → https://ushamart.onrender.com/api
+# NOTE: .env files are git-ignored. This [build.environment] ensures Vite gets
+#       the correct URL during every Netlify build.
+[build.environment]
+VITE_API_URL = "https://ushamart.onrender.com"
+
+# ── SPA routing — send all paths to index.html for React Router ──────────────
+[[redirects]]
+from  = "/*"
+to    = "/index.html"
+status = 200
+
+# ── Cache headers ─────────────────────────────────────────────────────────────
+[[headers]]
+for = "/assets/*"
+[headers.values]
+Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+for = "/*.html"
+[headers.values]
+Cache-Control = "public, max-age=0, must-revalidate"
