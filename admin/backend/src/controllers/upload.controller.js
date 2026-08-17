@@ -19,7 +19,7 @@ async function uploadImage(req, res) {
         const storagePath = `uploads/${Date.now()}_${filename}`;
 
         const { error: uploadErr } = await supabase.storage
-          .from('ushamart')
+          .from('category-images')
           .upload(storagePath, fileBuffer, {
             contentType: req.file.mimetype,
             upsert: true
@@ -28,7 +28,7 @@ async function uploadImage(req, res) {
         if (uploadErr) throw new Error(uploadErr.message);
 
         const { data: urlData } = supabase.storage
-          .from('ushamart')
+          .from('category-images')
           .getPublicUrl(storagePath);
 
         // Clean up local temp file
@@ -38,15 +38,14 @@ async function uploadImage(req, res) {
 
         return res.json({ success: true, url: urlData.publicUrl, filename });
       } catch (sbErr) {
-        console.error('[Upload Controller] Supabase upload failed:', sbErr.message);
-        // Fallback to serving locally if Supabase bucket isn't initialized yet
-        const publicUrl = `${req.protocol}://${req.get('host')}/uploads/${filename}`;
-        return res.json({ success: true, url: publicUrl, filename });
+        console.error('[Upload Controller] Supabase upload failed, falling back to local:', sbErr.message);
+        const relativeUrl = `/uploads/${filename}`;
+        return res.json({ success: true, url: relativeUrl, filename });
       }
     } else {
       // Fallback local URL
-      const publicUrl = `${req.protocol}://${req.get('host')}/uploads/${filename}`;
-      return res.json({ success: true, url: publicUrl, filename });
+      const relativeUrl = `/uploads/${filename}`;
+      return res.json({ success: true, url: relativeUrl, filename });
     }
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -71,7 +70,7 @@ async function uploadImages(req, res) {
           const storagePath = `uploads/${Date.now()}_${filename}`;
 
           const { error: uploadErr } = await supabase.storage
-            .from('ushamart')
+            .from('category-images')
             .upload(storagePath, fileBuffer, {
               contentType: f.mimetype,
               upsert: true
@@ -80,7 +79,7 @@ async function uploadImages(req, res) {
           if (uploadErr) throw new Error(uploadErr.message);
 
           const { data: urlData } = supabase.storage
-            .from('ushamart')
+            .from('category-images')
             .getPublicUrl(storagePath);
 
           fs.unlink(localPath, (err) => {
@@ -90,12 +89,12 @@ async function uploadImages(req, res) {
           urls.push({ url: urlData.publicUrl, filename });
         } catch (sbErr) {
           console.error('[Upload Controller] Supabase upload failed for file:', filename, sbErr.message);
-          const publicUrl = `${req.protocol}://${req.get('host')}/uploads/${filename}`;
-          urls.push({ url: publicUrl, filename });
+          const relativeUrl = `/uploads/${filename}`;
+          urls.push({ url: relativeUrl, filename });
         }
       } else {
-        const publicUrl = `${req.protocol}://${req.get('host')}/uploads/${filename}`;
-        urls.push({ url: publicUrl, filename });
+        const relativeUrl = `/uploads/${filename}`;
+        urls.push({ url: relativeUrl, filename });
       }
     }
     return res.json({ success: true, data: urls });

@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './components/Toast';
 import Sidebar, { NAV } from './components/Sidebar';
 import BrandName from './components/BrandName';
+import ErrorBoundary from './components/ErrorBoundary';
 
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
@@ -125,6 +126,7 @@ export default function App() {
  return (
  <AuthProvider>
  <ToastProvider>
+ <ErrorBoundary>
  <Routes>
  <Route path="/login" element={<LoginPage />} />
 
@@ -145,13 +147,16 @@ export default function App() {
  <Route path="/banners" element={<BannersPage />} />
  <Route path="/location-management" element={<LocationManagementPage />} />
  <Route path="/pincodes" element={<PincodesPage />} />
+ <Route path="/pincode-management" element={<Navigate to="/pincodes" replace />} />
  <Route path="/coupons" element={<CouponsPage />} />
+ <Route path="/discounts" element={<Navigate to="/coupons" replace />} />
  <Route path="/notifications" element={<NotificationsPage />} />
  <Route path="/reports" element={<PlaceholderPage title="Reports & Analytics" desc="Sales reports and revenue trends will appear here." />} />
  <Route path="/settings" element={<PlaceholderPage title="Settings" desc="Store settings and preferences." />} />
  <Route path="*" element={<Navigate to="/dashboard" replace />} />
  </Route>
  </Routes>
+ </ErrorBoundary>
  </ToastProvider>
  </AuthProvider>
  );

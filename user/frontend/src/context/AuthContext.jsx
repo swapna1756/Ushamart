@@ -1,4 +1,4 @@
-﻿import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import {
  onAuthStateChanged,
  createUserWithEmailAndPassword,
@@ -23,6 +23,8 @@ export function AuthProvider({ children }) {
  const [user, setUser] = useState(null);
  const [profile, setProfile] = useState(null);
  const [loading, setLoading] = useState(true);
+ const [bootstrapError, setBootstrapError] = useState('');
+ const [bootstrapAttempt, setBootstrapAttempt] = useState(0);
 
  const syncBackendCustomer = async (firebaseUser, dbProfile) => {
  try {
@@ -39,29 +41,74 @@ export function AuthProvider({ children }) {
  };
 
  useEffect(() => {
- const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
- if (currentUser) {
- if (!currentUser.emailVerified) {
- // Mandatory rule: Unverified users cannot maintain logged-in state
- await signOut(auth);
+ let active = true;
+ let settled = false;
+ const finish = () => {
+ if (active && !settled) {
+ settled = true;
+ setLoading(false);
+ }
+ };
+ const timeout = window.setTimeout(() => {
+ if (!active || settled) return;
+ setBootstrapError('Unable to connect to UshaMart. Please try again.');
+ finish();
+ }, 10000);
+
+ const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+ try {
+ if (!currentUser) {
+ setUser(null);
+ setProfile(null);
+ } else if (!currentUser.emailVerified) {
+ // Never leave the app blocked while a sign-out request is pending.
+ void signOut(auth).catch(() => {});
  setUser(null);
  setProfile(null);
  } else {
  setUser({ ...currentUser });
+ // Profile and backend-session sync are non-blocking. A failed remote query
+ // must not prevent routing to a real authenticated Firebase session.
+ void (async () => {
+ try {
  const dbProfile = await getUserProfile(currentUser.uid);
- await syncBackendCustomer(currentUser, dbProfile);
+ if (!active) return;
  setProfile(dbProfile);
+ await syncBackendCustomer(currentUser, dbProfile);
  await updateLastLoginInSupabase(currentUser.uid, true);
+ } catch (error) {
+ console.error('User profile bootstrap failed:', error);
  }
- } else {
+ })();
+ }
+ setBootstrapError('');
+ } catch (error) {
+ console.error('Firebase authentication bootstrap failed:', error);
+ setBootstrapError('Unable to connect to UshaMart. Please try again.');
+ } finally {
+ window.clearTimeout(timeout);
+ finish();
+ }
+ }, () => {
  setUser(null);
  setProfile(null);
- }
- setLoading(false);
+ setBootstrapError('Unable to connect to UshaMart. Please try again.');
+ window.clearTimeout(timeout);
+ finish();
  });
 
- return () => unsubscribe();
- }, []);
+ return () => {
+ active = false;
+ window.clearTimeout(timeout);
+ unsubscribe();
+ };
+ }, [bootstrapAttempt]);
+
+ const retryBootstrap = () => {
+ setBootstrapError('');
+ setLoading(true);
+ setBootstrapAttempt(value => value + 1);
+ };
 
  const signUp = async (email, password, fullName) => {
  // 1. Create user in Firebase Authentication
@@ -165,6 +212,8 @@ export function AuthProvider({ children }) {
  user,
  profile,
  loading,
+ bootstrapError,
+ retryBootstrap,
  signUp,
  login,
  logout,

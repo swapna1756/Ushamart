@@ -120,6 +120,7 @@ CREATE TABLE public.orders (
   user_name       TEXT,
   user_phone      TEXT,
   user_email      TEXT,
+  address_id      TEXT REFERENCES public.user_addresses(id) ON DELETE SET NULL,
   address_text    TEXT,
   pincode         TEXT,
   items           JSONB   DEFAULT '[]'::JSONB,
@@ -284,3 +285,26 @@ BEGIN
     EXECUTE format('CREATE POLICY "allow_all_%s" ON public.%I FOR ALL USING (true) WITH CHECK (true)', t, t);
   END LOOP;
 END$$;
+
+-- ── 15. Storage Buckets & Policies ───────────────────────────────────────────
+-- Create buckets if they don't exist
+INSERT INTO storage.buckets (id, name, public, file_size_limit)
+VALUES ('ushamart', 'ushamart', true, 5242880)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO storage.buckets (id, name, public, file_size_limit)
+VALUES ('category-images', 'category-images', true, 5242880)
+ON CONFLICT (id) DO NOTHING;
+
+-- Storage policies to allow read and write operations
+CREATE POLICY "Allow public read access on storage objects"
+ON storage.objects FOR SELECT USING (true);
+
+CREATE POLICY "Allow public insert access on storage objects"
+ON storage.objects FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Allow public update access on storage objects"
+ON storage.objects FOR UPDATE USING (true) WITH CHECK (true);
+
+CREATE POLICY "Allow public delete access on storage objects"
+ON storage.objects FOR DELETE USING (true);

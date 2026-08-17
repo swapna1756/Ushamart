@@ -13,6 +13,7 @@
 const _raw = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, ''); // strip trailing slashes
 const BASE = _raw ? `${_raw}/api` : '/api';
 const IS_DEV = import.meta.env.DEV;
+const REQUEST_TIMEOUT_MS = 15000;
 
 // Dev-only: log which base URL is in use so you can spot misconfiguration fast.
 if (IS_DEV) {
@@ -32,7 +33,9 @@ async function request(method, path, body = null, isFormData = false) {
   if (token) headers['Authorization'] = `Bearer ${token}`;
   if (!isFormData) headers['Content-Type'] = 'application/json';
 
-  const opts = { method, headers };
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const opts = { method, headers, signal: controller.signal };
   if (body) opts.body = isFormData ? body : JSON.stringify(body);
 
   const url = `${BASE}${path}`;
@@ -46,6 +49,10 @@ async function request(method, path, body = null, isFormData = false) {
   try {
     res = await fetch(url, opts);
   } catch (networkErr) {
+    window.clearTimeout(timeout);
+    if (networkErr.name === 'AbortError') {
+      throw new Error('The server took too long to respond. Please try again.');
+    }
     // Dev: include full URL and hint; Production: clean message only
     if (IS_DEV) {
       console.error(`[API] Network error — ${method} ${url}`, networkErr);
@@ -56,6 +63,8 @@ async function request(method, path, body = null, isFormData = false) {
         : 'Unable to connect to the server. Please try again.'
     );
   }
+
+  window.clearTimeout(timeout);
 
   // Dev-only response log
   if (IS_DEV) {

@@ -129,6 +129,7 @@ CREATE TABLE public.orders (
   "userName" text,
   "userPhone" text,
   "userEmail" text,
+  "addressId" text REFERENCES public.user_addresses("id") ON DELETE SET NULL,
   "addressText" text,
   "pincode" text,
   "items" jsonb DEFAULT '[]'::jsonb, -- array of items purchased
@@ -281,3 +282,26 @@ CREATE POLICY "Allow all actions public" ON public.orders FOR ALL USING (true) W
 CREATE POLICY "Allow all actions public" ON public.notifications FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all actions public" ON public.support_tickets FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all actions public" ON public.ratings FOR ALL USING (true) WITH CHECK (true);
+
+-- ── 15. Storage Buckets & Policies ───────────────────────────────────────────
+-- Create buckets if they don't exist
+INSERT INTO storage.buckets (id, name, public, file_size_limit)
+VALUES ('ushamart', 'ushamart', true, 5242880)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO storage.buckets (id, name, public, file_size_limit)
+VALUES ('category-images', 'category-images', true, 5242880)
+ON CONFLICT (id) DO NOTHING;
+
+-- Storage policies to allow read and write operations
+CREATE POLICY "Allow public read access on storage objects"
+ON storage.objects FOR SELECT USING (true);
+
+CREATE POLICY "Allow public insert access on storage objects"
+ON storage.objects FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Allow public update access on storage objects"
+ON storage.objects FOR UPDATE USING (true) WITH CHECK (true);
+
+CREATE POLICY "Allow public delete access on storage objects"
+ON storage.objects FOR DELETE USING (true);

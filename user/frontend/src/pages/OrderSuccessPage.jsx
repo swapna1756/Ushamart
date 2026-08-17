@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { CheckCircle2, Package, ShoppingBag, ArrowRight } from 'lucide-react';
 import { ordersApi } from '../services/api';
 import { formatINR } from '../utils/currency';
+import { resolveImageUrl } from '../utils/asset';
 
 function money(n) {
   return formatINR(n);

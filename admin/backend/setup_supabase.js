@@ -314,6 +314,25 @@ async function main() {
     }
   }
 
+  // Step 1.5: Create Storage Buckets
+  console.log('\n▶ Step 1.5: Creating Storage Buckets...');
+  const bucketsToCreate = ['ushamart', 'category-images'];
+  for (const bName of bucketsToCreate) {
+    try {
+      const { data, error } = await sb.storage.createBucket(bName, {
+        public: true,
+        fileSizeLimit: 5242880 // 5MB
+      });
+      if (error) {
+        console.log(`  ⚪ ${bName}: ${error.message} (might already exist)`);
+      } else {
+        console.log(`  ✅ ${bName}: bucket created successfully`);
+      }
+    } catch (e) {
+      console.log(`  ❌ ${bName}: failed to create bucket: ${e.message}`);
+    }
+  }
+
   // Step 2: Enable RLS + policies via SQL Editor note
   console.log('\n  ℹ  NOTE: If tables do not exist yet, run src/database/schema.sql');
   console.log('     in Supabase → SQL Editor → New Query → Run\n');

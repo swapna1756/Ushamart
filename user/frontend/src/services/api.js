@@ -12,6 +12,7 @@
  */
 const _raw = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
 const BASE = _raw ? `${_raw}/api` : '/api';
+const REQUEST_TIMEOUT_MS = 15000;
 
 function getToken() {
   const token = localStorage.getItem('ushamart_user_token');
@@ -23,7 +24,9 @@ async function request(method, path, body = null) {
   const token = getToken();
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const opts = { method, headers };
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const opts = { method, headers, signal: controller.signal };
   if (body) opts.body = JSON.stringify(body);
 
   const url = `${BASE}${path}`;
@@ -32,9 +35,14 @@ async function request(method, path, body = null) {
   try {
     res = await fetch(url, opts);
   } catch (networkErr) {
+    window.clearTimeout(timeout);
+    if (networkErr.name === 'AbortError') {
+      throw new Error('The server took too long to respond. Please try again.');
+    }
     throw new Error(`Network error — could not reach ${url}. ${networkErr.message}`);
   }
 
+  window.clearTimeout(timeout);
   const text = await res.text();
   let json;
   try {

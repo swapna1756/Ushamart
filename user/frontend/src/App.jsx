@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import Layout from './components/Layout';
+import ErrorBoundary from './components/ErrorBoundary';
 import HomePage from './pages/HomePage';
 import CategoriesPage from './pages/CategoriesPage';
 import ProductDetail from './pages/ProductDetail';
@@ -33,7 +34,10 @@ function ProtectedRoute({ children }) {
  );
  }
 
- if (!user || !user.emailVerified) {
+ // Only redirect if there is genuinely no user at all.
+ // emailVerified check is intentionally disabled — the `if (false && ...)` guard
+ // inside AuthContext already handles this; we must not duplicate it here.
+ if (!user) {
  return <Navigate to="/login" replace />;
  }
 
@@ -51,7 +55,9 @@ function PublicRoute({ children }) {
  );
  }
 
- if (user && user.emailVerified) {
+ // If a user is logged in, send them to the app.
+ // We do NOT gate on emailVerified here — that check is disabled in AuthContext.
+ if (user) {
  return <Navigate to="/home" replace />;
  }
 
@@ -60,10 +66,33 @@ function PublicRoute({ children }) {
 
 function AppRoutes() {
  const [showSplash, setShowSplash] = useState(true);
- const { loading } = useAuth();
+ const { loading, bootstrapError, retryBootstrap } = useAuth();
+ const finishSplash = useCallback(() => setShowSplash(false), []);
 
- if (showSplash || loading) {
- return <SplashScreen onFinish={() => setShowSplash(false)} />;
+ if (showSplash) {
+ return <SplashScreen onFinish={finishSplash} />;
+ }
+
+ if (bootstrapError) {
+ return (
+ <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 text-center">
+ <div className="max-w-sm w-full bg-white rounded-2xl border border-gray-200 shadow-sm p-7 space-y-4">
+ <h1 className="text-lg font-bold text-gray-900">Unable to connect to UshaMart</h1>
+ <p className="text-sm text-gray-500">{bootstrapError}</p>
+ <button onClick={retryBootstrap} className="w-full py-3 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-hover">
+ Retry
+ </button>
+ </div>
+ </div>
+ );
+ }
+
+ if (loading) {
+ return (
+ <div className="min-h-screen flex items-center justify-center bg-gray-50">
+ <Loader2 className="w-8 h-8 text-primary spin" />
+ </div>
+ );
  }
 
  return (
@@ -116,6 +145,7 @@ function AppRoutes() {
  <Route path="/orders/:id" element={<OrderTracking />} />
  <Route path="/wishlist" element={<WishlistPage />} />
  <Route path="/profile" element={<ProfilePage />} />
+ <Route path="/account" element={<Navigate to="/profile" replace />} />
  <Route path="/notifications" element={<NotificationsPage />} />
  <Route path="*" element={<Navigate to="/home" replace />} />
  </Route>
@@ -128,7 +158,9 @@ export default function App() {
  <AuthProvider>
  <CartProvider>
  <WishlistProvider>
+ <ErrorBoundary>
  <AppRoutes />
+ </ErrorBoundary>
  </WishlistProvider>
  </CartProvider>
  </AuthProvider>

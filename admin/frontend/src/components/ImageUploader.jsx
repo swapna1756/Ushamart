@@ -9,6 +9,7 @@
 import React, { useState, useRef } from 'react';
 import { Upload, Link, X, Image as ImageIcon, Loader2, AlertCircle } from 'lucide-react';
 import { uploadApi } from '../services/api';
+import { resolveImageUrl } from '../utils/asset';
 
 const ACCEPTED = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const MAX_MB   = 5;
@@ -46,13 +47,8 @@ export default function ImageUploader({
     try {
       const res = await uploadApi.image(file);
       onChange(res.url);
-    } catch {
-      // Fallback: store as base64 if upload API unavailable
-      const reader = new FileReader();
-      reader.onloadend = () => { onChange(reader.result); setBusy(false); };
-      reader.onerror  = () => { setError('Failed to read image.'); setBusy(false); };
-      reader.readAsDataURL(file);
-      return;
+    } catch (err) {
+      setError(err.message || 'Category image upload failed. Please try again.');
     }
     setBusy(false);
   };

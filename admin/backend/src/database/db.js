@@ -6,6 +6,7 @@
 const fs   = require('fs');
 const path = require('path');
 const { supabase, isConfigured: supabaseReady } = require('./supabase');
+const allowLocalFallback = String(process.env.USE_LOCAL_DB || '').toLowerCase() === 'true';
 
 // ── JSON file fallback ────────────────────────────────────────────────────────
 const DATA_DIR = path.join(__dirname, 'data');
@@ -89,6 +90,12 @@ async function sbInsert(table, doc) {
   if (error) throw new Error(`[SB insert:${table}] ${error.message}`);
   return toCamel(data);
 }
+async function sbInsertMany(table, docs) {
+  const rows = docs.map(doc => toSnake({ ...doc, createdAt: doc.createdAt || Date.now(), updatedAt: Date.now() }));
+  const { data, error } = await supabase.from(table).insert(rows).select();
+  if (error) throw new Error(`[SB insert:${table}] ${error.message}`);
+  return rowsToCamel(data || []);
+}
 async function sbUpdate(table, id, fields) {
   const row = toSnake({ ...fields, updatedAt: Date.now() });
   const { data, error } = await supabase.from(table).update(row).eq('id', id).select().single();
@@ -107,40 +114,63 @@ async function sbDelete(table, id) {
   return true;
 }
 
+function localOrThrow(error) {
+  if (!allowLocalFallback) throw error;
+  console.warn(`[db local mode] ${error.message}`);
+}
+function ensureLocalMode() {
+  if (!allowLocalFallback) throw new Error('Supabase is not configured. Refusing to use local data outside explicit local mode.');
+}
+
 // ── Unified db API (async-first; sync JSON as fallback) ───────────────────────
 const db = {
   async getAll(collection) {
     if (supabaseReady) {
-      return await sbGetAll(collection);
+      try {
+        return await sbGetAll(collection);
+      } catch (err) { localOrThrow(err); }
     }
+    ensureLocalMode();
     return readLocal(collection);
   },
   async getById(collection, id) {
     if (supabaseReady) {
-      return await sbGetById(collection, id);
+      try {
+        return await sbGetById(collection, id);
+      } catch (err) { localOrThrow(err); }
     }
+    ensureLocalMode();
     return (readLocal(collection).find(d => d.id === id) || null);
   },
   async find(collection, predicate) {
     if (supabaseReady) {
-      const rows = await sbGetAll(collection);
-      return rows.filter(predicate);
+      try {
+        const rows = await sbGetAll(collection);
+        return rows.filter(predicate);
+      } catch (err) { localOrThrow(err); }
     }
+    ensureLocalMode();
     const rows = readLocal(collection);
     return rows.filter(predicate);
   },
   async insert(collection, doc) {
     if (supabaseReady) {
-      return await sbInsert(collection, doc);
+      try {
+        return await sbInsert(collection, doc);
+      } catch (err) { localOrThrow(err); }
     }
+    ensureLocalMode();
     const docs  = readLocal(collection);
     const entry = { ...doc, createdAt: doc.createdAt||Date.now(), updatedAt: Date.now() };
     docs.push(entry); writeLocal(collection, docs); return entry;
   },
   async update(collection, id, fields) {
     if (supabaseReady) {
-      return await sbUpdate(collection, id, fields);
+      try {
+        return await sbUpdate(collection, id, fields);
+      } catch (err) { localOrThrow(err); }
     }
+    ensureLocalMode();
     const docs = readLocal(collection);
     const idx  = docs.findIndex(d => d.id === id);
     if (idx === -1) return null;
@@ -149,8 +179,11 @@ const db = {
   },
   async upsert(collection, id, doc) {
     if (supabaseReady) {
-      return await sbUpsert(collection, id, doc);
+      try {
+        return await sbUpsert(collection, id, doc);
+      } catch (err) { localOrThrow(err); }
     }
+    ensureLocalMode();
     const docs  = readLocal(collection);
     const idx   = docs.findIndex(d => d.id === id);
     const entry = { ...doc, id, updatedAt: Date.now() };
@@ -160,8 +193,11 @@ const db = {
   },
   async delete(collection, id) {
     if (supabaseReady) {
-      return await sbDelete(collection, id);
+      try {
+        return await sbDelete(collection, id);
+      } catch (err) { localOrThrow(err); }
     }
+    ensureLocalMode();
     const docs     = readLocal(collection);
     const filtered = docs.filter(d => d.id !== id);
     if (filtered.length === docs.length) return false;
@@ -174,8 +210,18 @@ const db = {
       if (error) throw new Error(error.message);
       return count || 0;
     }
+    ensureLocalMode();
     const docs = readLocal(collection);
     return predicate ? docs.filter(predicate).length : docs.length;
+  },
+  async insertMany(collection, docs) {
+    if (!Array.isArray(docs) || docs.length === 0) return [];
+    if (supabaseReady) return sbInsertMany(collection, docs);
+    if (!allowLocalFallback) throw new Error('Supabase is not configured. Refusing to persist checkout data locally.');
+    const existing = readLocal(collection);
+    const entries = docs.map(doc => ({ ...doc, createdAt: doc.createdAt || Date.now(), updatedAt: Date.now() }));
+    writeLocal(collection, [...existing, ...entries]);
+    return entries;
   },
   async replaceAll(collection, docs) {
     if (supabaseReady) {
@@ -187,6 +233,7 @@ const db = {
       }
       return;
     }
+    ensureLocalMode();
     writeLocal(collection, docs);
   },
 };

@@ -1,6 +1,6 @@
--- UshaMart production order/address system migration.
--- Run this in Supabase SQL editor before deploying the new checkout flow.
--- Keep SUPABASE_SERVICE_ROLE_KEY only on the backend host. Never expose it to Vite.
+-- Deprecated compatibility file. Use migrations/20260817_order_checkout.sql.
+-- It is based on the inspected production schema (TEXT IDs) and also creates
+-- order_items plus the required foreign keys and PostgREST schema reload.
 
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS firebase_uid text;
 

@@ -98,11 +98,24 @@ async function createOrder(req, res) {
     const requested = Array.isArray(req.body.items) ? req.body.items : [];
     if (requested.length < 1) return res.status(400).json({ success: false, message: 'Select at least one product.' });
 
-    const addressPayload = normalizeAddress(req.body.address || {}, uid);
+    const addressId = String(req.body.addressId || '').trim();
+    if (!addressId) return res.status(400).json({ success: false, message: 'Please select a valid delivery address.' });
+    const storedAddress = await db.getById('user_addresses', addressId);
+    if (!storedAddress || storedAddress.userId !== uid) {
+      return res.status(400).json({ success: false, message: 'Please select a valid delivery address.' });
+    }
+    const addressPayload = normalizeAddress(storedAddress, uid);
     const addressError = await validateAddressPayload(addressPayload);
     if (addressError) return res.status(400).json({ success: false, message: addressError });
 
+    const deliverySlot = String(req.body.deliverySlot || '').trim();
+    if (!deliverySlot) return res.status(400).json({ success: false, message: 'Please select a delivery slot.' });
+    if (req.body.paymentMethod && req.body.paymentMethod !== 'COD') {
+      return res.status(400).json({ success: false, message: 'Only Cash on Delivery is currently available.' });
+    }
+
     const pin = (await db.getAll('pincodes')).find(p => String(p.code || p.id) === addressPayload.pincode && p.enabled !== false);
+    if (!pin) return res.status(400).json({ success: false, message: 'Delivery is currently unavailable at this pincode.' });
     const products = await db.getAll('products');
     const items = [];
     let subtotal = 0;
@@ -118,8 +131,12 @@ async function createOrder(req, res) {
       if ((Number(prod.stock) || 0) < qty) {
         return res.status(409).json({ success: false, message: 'Sorry, this product is currently out of stock.' });
       }
-      const unitPrice = Number(prod.price) || 0;
-      const mrp = Number(prod.mrp) || unitPrice;
+      const variantInfo = String(raw.variantInfo || '').trim();
+      const variant = Array.isArray(prod.variantList)
+        ? prod.variantList.find(v => v.unit === variantInfo)
+        : null;
+      const unitPrice = Number(variant?.price ?? prod.price) || 0;
+      const mrp = Number(variant?.mrp ?? prod.mrp ?? unitPrice) || unitPrice;
       const itemTotal = unitPrice * qty;
       subtotal += itemTotal;
       discountAmount += Math.max(0, (mrp - unitPrice) * qty);
@@ -130,8 +147,8 @@ async function createOrder(req, res) {
         brand: prod.brand || '',
         productImage: prod.images?.[0] || '',
         image: prod.images?.[0] || '',
-        variantInfo: raw.variantInfo || prod.unit || prod.variants || '',
-        unit: prod.unit || '',
+        variantInfo: variantInfo || prod.unit || prod.variants || '',
+        unit: variant?.unit || prod.unit || '',
         quantity: qty,
         unitPrice,
         price: unitPrice,
@@ -155,7 +172,7 @@ async function createOrder(req, res) {
       userEmail:     user?.email || req.body.address?.email || '',
       customerName:  addressPayload.fullName || user?.name || '',
       customerPhone: addressPayload.mobileNumber || user?.phone || '',
-      addressId:     req.body.addressId || '',
+      addressId,
       address:       addressPayload,
       addressText:   addressText(addressPayload),
       pincode:       addressPayload.pincode,
@@ -169,18 +186,78 @@ async function createOrder(req, res) {
       orderStatus:   'PLACED',
       paymentMethod: 'COD',
       paymentStatus: 'PENDING',
-      deliverySlot:  req.body.deliverySlot  || '',
+      deliverySlot,
       statusHistory: [statusEvent('PLACED', uid)],
       idempotencyKey,
       createdAt:     Date.now(), updatedAt: Date.now(),
     };
-    await db.insert('orders', order);
-    for (const item of items) {
-      const prod = await db.getById('products', item.productId);
-      if (prod) await db.update('products', prod.id, { stock: Math.max(0, (Number(prod.stock) || 0) - item.quantity) });
+    if (uid) {
+      try {
+        const users = await db.getAll('users');
+        const userExists = users.some(u => u.id === uid);
+        if (!userExists) {
+          const userDoc = {
+            id: uid,
+            phone: req.user?.phone || addressPayload.mobileNumber || '',
+            name: req.user?.name || addressPayload.fullName || 'Customer',
+            email: req.user?.email || user?.email || '',
+            role: 'customer',
+            status: 'active',
+            totalOrders: 0,
+            totalSpent: 0,
+            addressText: '',
+            pincode: '',
+            registeredAt: Date.now(),
+            lastLogin: Date.now(),
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+          };
+          await db.insert('users', userDoc);
+        }
+      } catch (err) {
+        console.warn('[order.controller] Ensure user exists error:', err.message);
+      }
     }
-    res.status(201).json({ success: true, data: publicOrder(order), message: 'Order placed successfully.' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+
+    const savedOrder = await db.insert('orders', order);
+    const stockAdjustments = [];
+    try {
+      await db.insertMany('order_items', items.map((item, index) => ({
+        id: `oi_${id}_${index + 1}`,
+        orderId: id,
+        productId: item.productId,
+        productName: item.productName,
+        productImage: item.productImage,
+        variantInfo: item.variantInfo,
+        unit: item.unit,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        mrp: item.mrp,
+        subtotal: item.total,
+      })));
+
+      for (const item of items) {
+        const prod = await db.getById('products', item.productId);
+        if (prod) {
+          const previousStock = Number(prod.stock) || 0;
+          await db.update('products', prod.id, { stock: Math.max(0, previousStock - item.quantity) });
+          stockAdjustments.push({ id: prod.id, stock: previousStock });
+        }
+      }
+    } catch (writeError) {
+      // The FK cascade also removes any partially inserted order_items.  Never
+      // report success when the complete order could not be persisted.
+      await Promise.allSettled(stockAdjustments.map(change => db.update('products', change.id, { stock: change.stock })));
+      await db.delete('orders', id).catch(() => {});
+      throw writeError;
+    }
+    res.status(201).json({ success: true, data: publicOrder(savedOrder), message: 'Order placed successfully.' });
+  } catch (err) {
+    const message = /schema cache|column .* does not exist|table .* does not exist/i.test(err.message)
+      ? 'Checkout is temporarily unavailable while the order database is being updated. Please try again shortly.'
+      : (err.message || 'Unable to place your order right now. Please try again.');
+    res.status(500).json({ success: false, message });
+  }
 }
 
 async function updateStatus(req, res) {

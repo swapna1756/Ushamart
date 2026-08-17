@@ -3,10 +3,13 @@ const jwt    = require('jsonwebtoken');
 const admin  = require('firebase-admin');
 const db     = require('../database/db');
 
-const JWT_SECRET  = () => process.env.JWT_SECRET  || 'fallback_secret';
+const JWT_SECRET  = () => process.env.JWT_SECRET;
 const JWT_EXPIRES = () => process.env.JWT_EXPIRES_IN || '7d';
 
 function signToken(user) {
+  if (!JWT_SECRET()) {
+    throw new Error('Server authentication is not configured.');
+  }
   return jwt.sign(
     { id: user.id, email: user.email, role: user.role, name: user.name },
     JWT_SECRET(), { expiresIn: JWT_EXPIRES() }
@@ -115,44 +118,20 @@ async function firebaseUserLogin(req, res) {
   try {
     const { idToken, name, phone } = req.body;
     if (!idToken) return res.status(400).json({ success: false, message: 'Firebase ID token is required.' });
-
-    let decoded = null;
-    if (initFirebaseAdmin()) {
-      try {
-        decoded = await admin.auth().verifyIdToken(idToken);
-      } catch (e) {
-        console.warn('[firebaseUserLogin] verifyIdToken failed:', e.message);
-      }
+    if (String(idToken).startsWith('mock_')) {
+      return res.status(401).json({ success: false, message: 'A valid Firebase sign-in session is required.' });
     }
 
-    // Fallback if Firebase Admin is not configured or token decoding failed (e.g. mock/local environment)
-    if (!decoded) {
-      try {
-        const parts = idToken.split('.');
-        if (parts.length === 3) {
-          const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
-          decoded = {
-            uid: payload.user_id || payload.sub || payload.uid || 'usr_' + Date.now().toString(36),
-            email: payload.email || '',
-            email_verified: payload.email_verified !== false,
-            name: payload.name || name || '',
-            phone_number: payload.phone_number || phone || '',
-          };
-        }
-      } catch (e) {
-        console.warn('[firebaseUserLogin] Fallback JWT decode failed:', e.message);
-      }
+    if (!initFirebaseAdmin()) {
+      return res.status(503).json({ success: false, message: 'Secure sign-in is temporarily unavailable. Please try again later.' });
     }
 
-    if (!decoded) {
-      // Create a deterministic fallback identity from provided metadata or token prefix
-      decoded = {
-        uid: 'usr_' + String(idToken).slice(-12).replace(/[^a-zA-Z0-9]/g, 'x'),
-        email: '',
-        email_verified: true,
-        name: name || 'Customer',
-        phone_number: phone || '',
-      };
+    let decoded;
+    try {
+      decoded = await admin.auth().verifyIdToken(idToken);
+    } catch (e) {
+      console.warn('[firebaseUserLogin] verifyIdToken failed:', e.message);
+      return res.status(401).json({ success: false, message: 'Your sign-in session is invalid or has expired. Please sign in again.' });
     }
 
     const now = Date.now();

@@ -23,6 +23,9 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     const res = await authApi.login(email, password);
+    if (!res?.token || !res?.user || !['super_admin', 'store_manager'].includes(res.user.role)) {
+      throw new Error('You do not have admin access.');
+    }
     localStorage.setItem('ushamart_admin_token', res.token);
     localStorage.setItem('ushamart_admin_user', JSON.stringify(res.user));
     setUser(res.user);
