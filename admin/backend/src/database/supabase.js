@@ -1,25 +1,22 @@
 /**
  * supabase.js — Supabase Postgres client for UshaMart backend.
- * Project: https://xkooguvxhhempfpcmrjd.supabase.co
+ * Configuration is supplied only by the backend runtime environment.
  */
 const { createClient } = require('@supabase/supabase-js');
 
 let SUPABASE_URL = process.env.SUPABASE_URL;
-let SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET || process.env.SUPABASE_KEY || '';
+let SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 const isJunk = (val) => {
   if (!val) return true;
   const s = String(val).trim();
   return !(
-    (s.startsWith('eyJ') && s.length > 50) ||
-    s.startsWith('sb_secret_') ||
-    s.startsWith('sb_publishable_')
+    (s.startsWith('eyJ') && s.length > 50) || s.startsWith('sb_secret_')
   );
 };
 
 const hasServiceRole = String(SUPABASE_KEY).startsWith('sb_secret_') ||
-  (String(process.env.SUPABASE_SERVICE_ROLE_KEY || '').startsWith('eyJ') && String(process.env.SUPABASE_SERVICE_ROLE_KEY).length > 50) ||
-  (String(process.env.SUPABASE_SECRET || '').startsWith('eyJ') && String(process.env.SUPABASE_SECRET).length > 50);
+  (String(SUPABASE_KEY).startsWith('eyJ') && String(SUPABASE_KEY).length > 50);
 
 if (isJunk(SUPABASE_KEY)) SUPABASE_KEY = '';
 // Never silently select a real database project.  The deployed backend must
@@ -35,9 +32,15 @@ const isConfigured = !!(
   SUPABASE_URL.includes('.supabase.co')
 );
 
+const configurationError = !isConfigured
+  ? 'Supabase is not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY on the backend.'
+  : (process.env.NODE_ENV === 'production' && !hasServiceRole
+    ? 'Supabase server credentials are not configured. Set SUPABASE_SERVICE_ROLE_KEY on the backend.'
+    : '');
+
 let supabase = null;
 
-if (isConfigured) {
+if (isConfigured && !configurationError) {
   supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
     auth:  { persistSession: false, autoRefreshToken: false },
     db:    { schema: 'public' },
@@ -78,8 +81,10 @@ if (isConfigured) {
       console.warn('⚠ Storage initialization check failed (this is expected if running with restricted anon key):', err.message);
     }
   })();
+} else if (configurationError) {
+  console.error(`Supabase unavailable: ${configurationError}`);
 } else {
   console.warn('⚠   Supabase not configured — using local JSON file database.');
 }
 
-module.exports = { supabase, isConfigured, hasServiceRole };
+module.exports = { supabase, isConfigured: isConfigured && !configurationError, hasServiceRole, configurationError };

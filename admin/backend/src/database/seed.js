@@ -13,8 +13,9 @@ async function seed() {
   console.log('🌱  Seeding UshaMart database…\n');
 
   // ── Users (admin + sample customers) ─────────────────────────────────────
-  const adminEmail = process.env.ADMIN_EMAIL    || 'naidumay123@gmail.com';
-  const adminPass  = process.env.ADMIN_PASSWORD || 'Rajubhai@1';
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPass  = process.env.ADMIN_PASSWORD;
+  if (!adminEmail || !adminPass) throw new Error('ADMIN_EMAIL and ADMIN_PASSWORD must be configured before seeding an admin user.');
   const adminHash  = await bcrypt.hash(adminPass, 10);
   db.replaceAll('users', [
     {

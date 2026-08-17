@@ -5,7 +5,7 @@
  */
 const fs   = require('fs');
 const path = require('path');
-const { supabase, isConfigured: supabaseReady } = require('./supabase');
+const { supabase, isConfigured: supabaseReady, configurationError } = require('./supabase');
 const allowLocalFallback = String(process.env.USE_LOCAL_DB || '').toLowerCase() === 'true';
 
 // ── JSON file fallback ────────────────────────────────────────────────────────
@@ -119,7 +119,7 @@ function localOrThrow(error) {
   console.warn(`[db local mode] ${error.message}`);
 }
 function ensureLocalMode() {
-  if (!allowLocalFallback) throw new Error('Supabase is not configured. Refusing to use local data outside explicit local mode.');
+  if (!allowLocalFallback) throw new Error(configurationError || 'Supabase is not configured. Refusing to use local data outside explicit local mode.');
 }
 
 // ── Unified db API (async-first; sync JSON as fallback) ───────────────────────

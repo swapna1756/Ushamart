@@ -2,6 +2,7 @@ require('dotenv').config();
 const express    = require('express');
 const cors       = require('cors');
 const path       = require('path');
+const { isConfigured: supabaseConfigured } = require('./database/supabase');
 
 // ── Route imports ─────────────────────────────────────────────────────────────
 const authRoutes          = require('./routes/auth.routes');
@@ -71,10 +72,20 @@ app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 // Both /health and /api/health are supported so monitoring tools and the
 // frontend can use the same /api prefix pattern.
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', service: 'UshaMart Admin API', timestamp: new Date().toISOString() });
+  res.json({
+    status: 'ok',
+    service: 'UshaMart Admin API',
+    database: supabaseConfigured ? 'ready' : 'misconfigured',
+    timestamp: new Date().toISOString(),
+  });
 });
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', service: 'UshaMart Admin API', timestamp: new Date().toISOString() });
+  res.json({
+    status: 'ok',
+    service: 'UshaMart Admin API',
+    database: supabaseConfigured ? 'ready' : 'misconfigured',
+    timestamp: new Date().toISOString(),
+  });
 });
 
 // ── API Routes ────────────────────────────────────────────────────────────────

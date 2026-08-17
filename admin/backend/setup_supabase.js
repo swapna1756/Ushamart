@@ -9,12 +9,12 @@ const fs   = require('fs');
 const path = require('path');
 
 const URL = process.env.SUPABASE_URL;
-const KEY = process.env.SUPABASE_KEY;
+const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET || process.env.SUPABASE_KEY;
 
-if (!URL || !KEY) { console.error('❌  Set SUPABASE_URL and SUPABASE_KEY in .env'); process.exit(1); }
+if (!URL || !KEY) { console.error('❌  Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in the backend environment'); process.exit(1); }
 
 // Use the secret key for schema creation (bypasses RLS)
-const SECRET = process.env.SUPABASE_SECRET || KEY;
+const SECRET = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET || KEY;
 const sb = createClient(URL, SECRET, { auth: { persistSession: false } });
 
 const DATA_DIR = path.join(__dirname, 'src/database/data');

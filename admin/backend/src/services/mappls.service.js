@@ -1,7 +1,7 @@
 /**
  * Backend Mappls (MapmyIndia) Service for Pincode Validation & Geocoding
  */
-const MAPPLS_API_KEY = process.env.MAPPLS_API_KEY || 'dmdblrrmxkpvhvrgsljvpdmxscrlkaukaypd';
+const MAPPLS_API_KEY = process.env.MAPPLS_API_KEY || '';
 
 // Indian Pincodes dictionary fallback
 const INDIAN_PINCODES = {

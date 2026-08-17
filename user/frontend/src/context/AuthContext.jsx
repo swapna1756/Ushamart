@@ -9,12 +9,6 @@ import {
  updateProfile
 } from 'firebase/auth';
 import { auth } from '../firebase';
-import {
- createUserProfile,
- getUserProfile,
- updateUserProfileInSupabase,
- updateLastLoginInSupabase
-} from '../supabase';
 import { authApi } from '../services/api';
 
 const AuthContext = createContext(null);
@@ -26,17 +20,26 @@ export function AuthProvider({ children }) {
  const [bootstrapError, setBootstrapError] = useState('');
  const [bootstrapAttempt, setBootstrapAttempt] = useState(0);
 
- const syncBackendCustomer = async (firebaseUser, dbProfile) => {
+ const toProfile = (backendUser) => backendUser ? ({
+ ...backendUser,
+ full_name: backendUser.name || '',
+ mobile_number: backendUser.phone || '',
+ profile_image: backendUser.profilePic || null,
+ }) : null;
+
+ const syncBackendCustomer = async (firebaseUser, profileHint = null) => {
  try {
  const idToken = await firebaseUser.getIdToken();
  const res = await authApi.firebaseLogin({
  idToken,
- name: dbProfile?.full_name || firebaseUser.displayName || '',
- phone: dbProfile?.mobile_number || '',
+ name: profileHint?.full_name || firebaseUser.displayName || '',
+ phone: profileHint?.mobile_number || '',
  });
  if (res?.token) localStorage.setItem('ushamart_user_token', res.token);
+ return toProfile(res?.user);
  } catch (err) {
  console.warn('Backend customer session sync failed:', err.message);
+ return null;
  }
  };
 
@@ -71,11 +74,9 @@ export function AuthProvider({ children }) {
  // must not prevent routing to a real authenticated Firebase session.
  void (async () => {
  try {
- const dbProfile = await getUserProfile(currentUser.uid);
+ const backendProfile = await syncBackendCustomer(currentUser);
  if (!active) return;
- setProfile(dbProfile);
- await syncBackendCustomer(currentUser, dbProfile);
- await updateLastLoginInSupabase(currentUser.uid, true);
+ setProfile(backendProfile);
  } catch (error) {
  console.error('User profile bootstrap failed:', error);
  }
@@ -123,14 +124,8 @@ export function AuthProvider({ children }) {
  // 3. Send Verification Email
  await sendEmailVerification(firebaseUser);
 
- // 4. Create User Profile in Supabase
- await createUserProfile({
- firebaseUid: firebaseUser.uid,
- fullName: fullName,
- email: email,
- });
-
- // 5. Sign out immediately so user must verify email before logging in
+ // 4. Sign out immediately so user must verify email before logging in.
+ // The verified login creates/updates the customer through the backend API.
  await signOut(auth);
  setUser(null);
  setProfile(null);
@@ -154,10 +149,8 @@ export function AuthProvider({ children }) {
  throw unverifiedErr;
  }
 
- // 3. Update Supabase last login & fetch profile
- await updateLastLoginInSupabase(firebaseUser.uid, true);
- const dbProfile = await getUserProfile(firebaseUser.uid);
- await syncBackendCustomer(firebaseUser, dbProfile);
+ // 3. Establish the backend session and load the persisted customer profile.
+ const dbProfile = await syncBackendCustomer(firebaseUser);
  
  setUser({ ...firebaseUser });
  setProfile(dbProfile);
@@ -191,9 +184,17 @@ export function AuthProvider({ children }) {
  const updateProfileData = async (updates) => {
  if (!user) return;
 
- // Update Supabase Database
- const updatedDbProfile = await updateUserProfileInSupabase(user.uid, updates);
- setProfile(updatedDbProfile);
+ const backendId = profile?.id;
+ if (!backendId) throw new Error('Your account session is not ready. Please try again.');
+ const payload = {
+ ...updates,
+ name: updates.full_name ?? updates.name,
+ profilePic: updates.profile_image ?? updates.profilePic,
+ };
+ delete payload.full_name;
+ delete payload.profile_image;
+ const response = await authApi.update(backendId, payload);
+ setProfile(toProfile(response?.data));
 
  // Update Firebase Profile if full_name or profile_image provided
  const fbUpdates = {};

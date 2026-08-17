@@ -41,8 +41,9 @@ async function clean() {
     // If no super_admin exists in database, seed a default one
     if (adminOnly.length === 0) {
       const bcrypt = require('bcryptjs');
-      const adminEmail = process.env.ADMIN_EMAIL || 'naidumay123@gmail.com';
-      const adminPass = process.env.ADMIN_PASSWORD || 'Rajubhai@1';
+      const adminEmail = process.env.ADMIN_EMAIL;
+      const adminPass = process.env.ADMIN_PASSWORD;
+      if (!adminEmail || !adminPass) throw new Error('ADMIN_EMAIL and ADMIN_PASSWORD must be configured before creating an admin user.');
       const adminHash = await bcrypt.hash(adminPass, 10);
       adminOnly.push({
         id: 'adm_001',

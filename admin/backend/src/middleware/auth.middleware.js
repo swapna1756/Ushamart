@@ -1,5 +1,9 @@
 const jwt = require('jsonwebtoken');
 
+function configuredJwtSecret() {
+  return process.env.JWT_SECRET || '';
+}
+
 /**
  * Verifies the JWT from the Authorization: Bearer <token> header.
  * Attaches req.user on success.
@@ -11,8 +15,11 @@ function authenticate(req, res, next) {
   }
 
   const token = header.split(' ')[1];
+  if (!configuredJwtSecret()) {
+    return res.status(503).json({ success: false, message: 'Authentication is temporarily unavailable. Please try again later.' });
+  }
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+    const decoded = jwt.verify(token, configuredJwtSecret());
     req.user = decoded;
     next();
   } catch (err) {
@@ -39,9 +46,10 @@ function requireAdmin(req, res, next) {
 function optionalAuth(req, res, next) {
   const header = req.headers.authorization;
   if (header && header.startsWith('Bearer ')) {
+    if (!configuredJwtSecret()) return next();
     const token = header.split(' ')[1];
     try {
-      req.user = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+      req.user = jwt.verify(token, configuredJwtSecret());
     } catch { /* token invalid — proceed as guest */ }
   }
   next();
