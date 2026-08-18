@@ -15,30 +15,33 @@ const SUPABASE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
 
 // ── Validation ────────────────────────────────────────────────────────────────
 const validUrl = SUPABASE_URL.startsWith('https://') && SUPABASE_URL.includes('.supabase.co');
-const validKey = SUPABASE_KEY.length > 50;
+// Accept any non-empty key — both old JWT-style (eyJ…) and new sb_secret_… format
+const validKey = SUPABASE_KEY.length > 0;
 
 const isConfigured = validUrl && validKey;
 
-// Detect if the key is a real service-role key (not an anon key)
-// Service-role keys start with eyJ… and have "role":"service_role" in the JWT payload
+// Detect whether the key carries service-role privileges.
+// Supported formats:
+//   1. New Supabase Secret Key:  sb_secret_<anything>
+//   2. Legacy JWT service-role:  eyJ… with "role":"service_role" in payload
 let hasServiceRole = false;
-if (validKey && SUPABASE_KEY.startsWith('eyJ')) {
+if (SUPABASE_KEY.startsWith('sb_secret_')) {
+  // New-format secret keys are always service-role keys
+  hasServiceRole = true;
+} else if (SUPABASE_KEY.startsWith('eyJ')) {
   try {
     const payload = JSON.parse(Buffer.from(SUPABASE_KEY.split('.')[1], 'base64').toString());
     hasServiceRole = payload.role === 'service_role';
   } catch {
-    // JWT decode failed — assume it's not a service-role key
     hasServiceRole = false;
   }
 }
-// Also accept sb_secret_ format keys (future Supabase key format)
-if (SUPABASE_KEY.startsWith('sb_secret_')) hasServiceRole = true;
 
 let configurationError = '';
 if (!validUrl) {
   configurationError = 'SUPABASE_URL is missing or invalid. It must be https://YOUR_PROJECT.supabase.co';
 } else if (!validKey) {
-  configurationError = 'SUPABASE_SERVICE_ROLE_KEY is missing or too short. Copy it from Supabase Dashboard → Project Settings → API.';
+  configurationError = 'SUPABASE_SERVICE_ROLE_KEY is missing. Copy it from Supabase Dashboard → Project Settings → API.';
 } else if (!hasServiceRole && process.env.NODE_ENV === 'production') {
   configurationError = 'SUPABASE_SERVICE_ROLE_KEY appears to be an anon key, not a service-role key. The backend requires the service-role key.';
 }
