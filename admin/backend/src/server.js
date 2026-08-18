@@ -3,6 +3,7 @@ const express    = require('express');
 const cors       = require('cors');
 const path       = require('path');
 const { isConfigured: supabaseConfigured } = require('./database/supabase');
+const ensureAdminExists = require('./database/ensure-admin');
 
 // ── Route imports ─────────────────────────────────────────────────────────────
 const authRoutes          = require('./routes/auth.routes');
@@ -124,6 +125,14 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`   Port    : ${PORT}`);
   console.log(`   Env     : ${env}`);
   console.log(`   Health  : http://localhost:${PORT}/health\n`);
+
+  // ── Bootstrap admin user ──────────────────────────────────────────────────
+  // Runs in the background every startup.
+  // Ensures ADMIN_EMAIL / ADMIN_PASSWORD always exist in the database,
+  // regardless of redeployment or database migrations.
+  ensureAdminExists().catch(err =>
+    console.error('⚠   ensure-admin startup error:', err.message)
+  );
 });
 
 module.exports = app;
