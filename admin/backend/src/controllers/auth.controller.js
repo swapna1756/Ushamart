@@ -268,7 +268,18 @@ async function firebaseUserLogin(req, res) {
 
     const now         = Date.now();
     const email       = decoded.email || '';
-    const firebaseUid = decoded.uid;
+    // Firebase Admin's verifyIdToken() maps the JWT "sub" claim to "uid".
+    // The raw JWT payload (used by decodeFirebaseTokenUnsafe fallback) uses "sub".
+    // Always try both so the fallback path never produces undefined.
+    const firebaseUid = decoded.uid || decoded.sub || '';
+
+    if (!firebaseUid) {
+      console.error('[firebaseUserLogin] Could not extract user ID from token payload.');
+      return res.status(401).json({
+        success: false,
+        message: 'Unable to identify user from token. Please sign in again.',
+      });
+    }
 
     let users;
     try {
