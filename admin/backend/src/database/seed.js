@@ -40,32 +40,24 @@ async function seed() {
   const now = Date.now();
 
   // ── Users ──────────────────────────────────────────────────────────────────
+  // Single super-admin account. Password is hashed from ADMIN_PASSWORD env var.
+  // Set ADMIN_PASSWORD=Rajubhai@1 in your Render environment variables.
   const adminHash = await bcrypt.hash(adminPass, 10);
   await db.replaceAll('users', [
     {
-      id: 'adm_001', name: 'Super Admin', email: adminEmail,
-      password: adminHash, phone: '9000000000',
-      role: 'super_admin', status: 'active',
-      createdAt: now, updatedAt: now,
-    },
-    {
-      id: 'usr_001', name: 'Alok Kumar', email: 'alok@example.com',
-      phone: '9876543210', role: 'customer', status: 'active',
-      addressText: 'Flat 405, Green Glen Layout, Bangalore - 560103',
-      pincode: '560001', totalOrders: 3, totalSpent: 1245.50,
-      registeredAt: now - 86400000 * 30, lastLogin: now - 3600000,
-      createdAt: now - 86400000 * 30, updatedAt: now,
-    },
-    {
-      id: 'usr_002', name: 'Preeti Sharma', email: 'preeti@example.com',
-      phone: '9988776655', role: 'customer', status: 'active',
-      addressText: 'A-21, Saket, New Delhi - 110017',
-      pincode: '110001', totalOrders: 1, totalSpent: 280.00,
-      registeredAt: now - 86400000 * 15, lastLogin: now - 86400000 * 2,
-      createdAt: now - 86400000 * 15, updatedAt: now,
+      id:        'adm_001',
+      name:      'Admin',
+      email:     adminEmail,   // naidumay123@gmail.com  (set via ADMIN_EMAIL env var)
+      password:  adminHash,    // bcrypt hash of ADMIN_PASSWORD — never stored in plain text
+      phone:     '',
+      role:      'super_admin',
+      status:    'active',
+      createdAt: now,
+      updatedAt: now,
     },
   ]);
-  console.log('✅  Users seeded (1 admin, 2 sample customers)');
+  console.log('✅  Admin user seeded');
+  console.log(`   Email: ${adminEmail}`);
 
   // ── Pincodes ───────────────────────────────────────────────────────────────
   await db.replaceAll('pincodes', [
@@ -168,7 +160,7 @@ async function seed() {
   console.log('\n🎉  Seed complete!\n');
   console.log('   Admin login:');
   console.log(`     Email:    ${adminEmail}`);
-  console.log(`     Password: (as set in ADMIN_PASSWORD env var)\n`);
+  console.log('     Password: (as set in ADMIN_PASSWORD on Render)\n');
 }
 
 seed().catch(err => {
