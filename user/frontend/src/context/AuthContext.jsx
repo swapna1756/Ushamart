@@ -69,7 +69,10 @@ export function AuthProvider({ children }) {
  setUser(null);
  setProfile(null);
  } else {
- setUser({ ...currentUser });
+ // Store the real Firebase user object — NOT a plain spread copy.
+ // Spreading loses prototype methods like getIdToken() which are
+ // needed by ensureBackendToken() in CheckoutPage.
+ setUser(currentUser);
  // Profile and backend-session sync are non-blocking. A failed remote query
  // must not prevent routing to a real authenticated Firebase session.
  void (async () => {
@@ -152,7 +155,8 @@ export function AuthProvider({ children }) {
  // 3. Establish the backend session and load the persisted customer profile.
  const dbProfile = await syncBackendCustomer(firebaseUser);
  
- setUser({ ...firebaseUser });
+ // Store the real Firebase user object — NOT a plain spread copy.
+ setUser(firebaseUser);
  setProfile(dbProfile);
  return firebaseUser;
  };

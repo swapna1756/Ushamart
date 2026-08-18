@@ -80,7 +80,15 @@ export function CartProvider({ children }) {
   // ── Load + merge cart when user logs in ────────────────────────────────────
   useEffect(() => {
     if (!userId) {
-      // Logged out — keep localStorage cart for guest
+      // User logged out — clear cart state and localStorage immediately
+      // so stale items from a previous session never show on the badge.
+      if (syncTimer.current) {
+        clearTimeout(syncTimer.current);
+        syncTimer.current = null;
+      }
+      pendingCart.current = null;
+      setCartState({});
+      lsWrite({});
       setServerReady(false);
       return;
     }
@@ -94,13 +102,20 @@ export function CartProvider({ children }) {
         const serverCart = res?.data || {};
         const localCart  = lsRead();
 
-        if (Object.keys(serverCart).length === 0 && Object.keys(localCart).length > 0) {
-          // New login with existing guest cart → push local items to server
-          const merged = localCart;
-          setCartState(merged);
-          lsWrite(merged);
-          await cartApi.sync(merged).catch(() => {});
-        } else if (Object.keys(serverCart).length > 0) {
+        if (Object.keys(serverCart).length === 0) {
+          // Server cart is empty:
+          //   - If local has guest items, push them to the server
+          //   - If local is also empty, clear it (handles stale localStorage)
+          if (Object.keys(localCart).length > 0) {
+            setCartState(localCart);
+            lsWrite(localCart);
+            await cartApi.sync(localCart).catch(() => {});
+          } else {
+            // Both empty — clear any stale localStorage
+            setCartState({});
+            lsWrite({});
+          }
+        } else {
           // Server has items → merge (prefer higher qty), update local
           const merged = mergeCarts(localCart, serverCart);
           setCartState(merged);
@@ -109,7 +124,6 @@ export function CartProvider({ children }) {
             await cartApi.sync(merged).catch(() => {});
           }
         }
-        // else: both empty — nothing to do
         setServerReady(true);
       } catch (err) {
         // Server unavailable — continue with localStorage
