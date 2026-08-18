@@ -54,7 +54,29 @@ async function adminLogin(req, res) {
       return res.status(400).json({ success: false, message: 'Email and password are required.' });
     }
 
-    const users = await db.getAll('users');
+    let users;
+    try {
+      users = await db.getAll('users');
+    } catch (dbErr) {
+      // Provide an actionable message when the table is missing rather than
+      // a raw Supabase schema-cache error that's hard to diagnose.
+      const isSchemaError =
+        /schema cache|does not exist|relation.*users/i.test(dbErr.message);
+      if (isSchemaError) {
+        console.error(
+          '[adminLogin] public.users table not found. ' +
+          'Run admin/backend/src/database/migrations/create_users_table.sql ' +
+          'in Supabase SQL Editor, then redeploy.'
+        );
+        return res.status(503).json({
+          success: false,
+          message:
+            'The database is not set up yet. ' +
+            'Please ask the administrator to run the database migration.',
+        });
+      }
+      throw dbErr; // re-throw unrelated DB errors
+    }
     let user = users.find(u =>
       u.email?.toLowerCase() === email.toLowerCase() &&
       ['super_admin', 'store_manager'].includes(u.role)
@@ -122,7 +144,17 @@ async function userLogin(req, res) {
     const { phone, name, email } = req.body;
     if (!phone) return res.status(400).json({ success: false, message: 'Phone number is required.' });
 
-    const users = await db.getAll('users');
+    let users;
+    try {
+      users = await db.getAll('users');
+    } catch (dbErr) {
+      const isSchemaError = /schema cache|does not exist|relation.*users/i.test(dbErr.message);
+      if (isSchemaError) {
+        console.error('[userLogin] public.users table not found — run the migration SQL.');
+        return res.status(503).json({ success: false, message: 'Service temporarily unavailable. Please try again shortly.' });
+      }
+      throw dbErr;
+    }
     let user = users.find(u => u.phone === phone && u.role === 'customer');
 
     if (user && user.status === 'blocked') {
@@ -196,7 +228,17 @@ async function firebaseUserLogin(req, res) {
     const email       = decoded.email || '';
     const firebaseUid = decoded.uid;
 
-    const users = await db.getAll('users');
+    let users;
+    try {
+      users = await db.getAll('users');
+    } catch (dbErr) {
+      const isSchemaError = /schema cache|does not exist|relation.*users/i.test(dbErr.message);
+      if (isSchemaError) {
+        console.error('[firebaseUserLogin] public.users table not found — run the migration SQL.');
+        return res.status(503).json({ success: false, message: 'Service temporarily unavailable. Please try again shortly.' });
+      }
+      throw dbErr;
+    }
     let user = users.find(u =>
       u.role === 'customer' &&
       (u.firebaseUid === firebaseUid ||
