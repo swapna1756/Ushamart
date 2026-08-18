@@ -17,6 +17,7 @@ export function AuthProvider({ children }) {
  const [user, setUser] = useState(null);
  const [profile, setProfile] = useState(null);
  const [loading, setLoading] = useState(true);
+ const [tokenReady, setTokenReady] = useState(false); // true once backend JWT is stored
  const [bootstrapError, setBootstrapError] = useState('');
  const [bootstrapAttempt, setBootstrapAttempt] = useState(0);
 
@@ -29,16 +30,26 @@ export function AuthProvider({ children }) {
 
  const syncBackendCustomer = async (firebaseUser, profileHint = null) => {
  try {
- const idToken = await firebaseUser.getIdToken();
+ const idToken = await firebaseUser.getIdToken(/* forceRefresh */ false);
  const res = await authApi.firebaseLogin({
  idToken,
  name: profileHint?.full_name || firebaseUser.displayName || '',
  phone: profileHint?.mobile_number || '',
  });
- if (res?.token) localStorage.setItem('ushamart_user_token', res.token);
+ if (res?.token) {
+ localStorage.setItem('ushamart_user_token', res.token);
+ setTokenReady(true);
+ console.log('[Auth] Backend token stored. Length:', res.token.length);
+ }
  return toProfile(res?.user);
  } catch (err) {
- console.warn('Backend customer session sync failed:', err.message);
+ console.warn('[Auth] Backend customer session sync failed:', err.message);
+ // If sync fails but we already have a stored token, keep using it.
+ const existing = localStorage.getItem('ushamart_user_token');
+ if (existing && existing !== 'undefined' && existing !== 'null') {
+ setTokenReady(true);
+ console.log('[Auth] Keeping existing backend token after sync failure.');
+ }
  return null;
  }
  };
@@ -63,16 +74,26 @@ export function AuthProvider({ children }) {
  if (!currentUser) {
  setUser(null);
  setProfile(null);
+ setTokenReady(false);
+ localStorage.removeItem('ushamart_user_token');
  } else if (!currentUser.emailVerified) {
  // Never leave the app blocked while a sign-out request is pending.
  void signOut(auth).catch(() => {});
  setUser(null);
  setProfile(null);
+ setTokenReady(false);
+ localStorage.removeItem('ushamart_user_token');
  } else {
  // Store the real Firebase user object — NOT a plain spread copy.
  // Spreading loses prototype methods like getIdToken() which are
  // needed by ensureBackendToken() in CheckoutPage.
  setUser(currentUser);
+ // If a token from a previous session already exists in localStorage,
+ // mark it ready immediately so CartContext doesn't wait unnecessarily.
+ const existingToken = localStorage.getItem('ushamart_user_token');
+ if (existingToken && existingToken !== 'undefined' && existingToken !== 'null') {
+ setTokenReady(true);
+ }
  // Profile and backend-session sync are non-blocking. A failed remote query
  // must not prevent routing to a real authenticated Firebase session.
  void (async () => {
@@ -166,6 +187,7 @@ export function AuthProvider({ children }) {
  localStorage.removeItem('ushamart_user_token');
  setUser(null);
  setProfile(null);
+ setTokenReady(false);
  };
 
  const resetPassword = async (email) => {
@@ -217,6 +239,7 @@ export function AuthProvider({ children }) {
  user,
  profile,
  loading,
+ tokenReady,
  bootstrapError,
  retryBootstrap,
  signUp,

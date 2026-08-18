@@ -37,6 +37,9 @@ const defaultOrigins = [
   'https://ushamart.onrender.com',
   'https://ushamart-wholesale.in',
   'https://www.ushamart-wholesale.in',
+  // Netlify deployments (explicit, in addition to the *.netlify.app wildcard below)
+  'https://ushamart-wholesale.netlify.app',
+  'https://usha-mart.netlify.app',
 ];
 
 const envOrigins = process.env.CORS_ORIGINS

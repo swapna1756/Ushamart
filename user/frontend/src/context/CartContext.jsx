@@ -46,7 +46,7 @@ function mergeCarts(local, server) {
 }
 
 export function CartProvider({ children }) {
-  const { user } = useAuth();
+  const { user, tokenReady } = useAuth();
   const userId   = user?.uid || user?.id || null;
 
   const [cart,       setCartState] = useState(lsRead);
@@ -77,7 +77,7 @@ export function CartProvider({ children }) {
     }, SYNC_DELAY);
   }, []);
 
-  // ── Load + merge cart when user logs in ────────────────────────────────────
+  // ── Load + merge cart when user logs in AND token is ready ────────────────
   useEffect(() => {
     if (!userId) {
       // User logged out — clear cart state and localStorage immediately
@@ -92,6 +92,10 @@ export function CartProvider({ children }) {
       setServerReady(false);
       return;
     }
+
+    // Wait until the backend JWT is stored before making authenticated requests.
+    // Without this guard, cartApi.get() fires with no token → 401.
+    if (!tokenReady) return;
 
     let cancelled = false;
 
@@ -134,17 +138,17 @@ export function CartProvider({ children }) {
 
     loadServerCart();
     return () => { cancelled = true; };
-  }, [userId]);
+  }, [userId, tokenReady]);
 
   // ── Mutators (all optimistic + debounced server sync) ──────────────────────
   const setCart = useCallback((updater) => {
     setCartState(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
       lsWrite(next);
-      if (userId) scheduleSync(next);
+      if (userId && tokenReady) scheduleSync(next);
       return next;
     });
-  }, [userId, scheduleSync]);
+  }, [userId, tokenReady, scheduleSync]);
 
   const addItem = useCallback((cartKey) => {
     setCart(prev => ({ ...prev, [cartKey]: (prev[cartKey] || 0) + 1 }));
@@ -181,12 +185,12 @@ export function CartProvider({ children }) {
     pendingCart.current = null;
     setCartState({});
     lsWrite({});
-    if (userId) {
+    if (userId && tokenReady) {
       await cartApi.clear().catch(err =>
         console.warn('[CartContext] Server cart clear failed:', err.message)
       );
     }
-  }, [userId]);
+  }, [userId, tokenReady]);
 
   const setPincode = useCallback((code) => {
     setPincodeState(code);
