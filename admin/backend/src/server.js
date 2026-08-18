@@ -18,6 +18,7 @@ const notificationRoutes  = require('./routes/notification.routes');
 const uploadRoutes        = require('./routes/upload.routes');
 const dashboardRoutes     = require('./routes/dashboard.routes');
 const wishlistRoutes      = require('./routes/wishlist.routes');
+const cartRoutes          = require('./routes/cart.routes');
 const addressRoutes       = require('./routes/address.routes');
 
 const app  = express();
@@ -103,6 +104,7 @@ app.use('/api/notifications',  notificationRoutes);
 app.use('/api/upload',         uploadRoutes);
 app.use('/api/dashboard',      dashboardRoutes);
 app.use('/api/wishlist',       wishlistRoutes);
+app.use('/api/cart',           cartRoutes);
 
 // ── Global error handler ──────────────────────────────────────────────────────
 app.use((err, _req, res, _next) => {

@@ -87,7 +87,7 @@ export default function HomePage() {
  if (error) {
  return (
  <div className="flex flex-col items-center justify-center min-h-screen text-center px-6">
- <span className="text-5xl mb-4">??</span>
+ <span className="text-5xl mb-4">🛒</span>
  <h2 className="text-base font-semibold text-gray-700 mb-1">Could not load products</h2>
  <p className="text-xs text-muted mb-6 max-w-xs">{error}</p>
  <button onClick={loadData}
@@ -196,7 +196,7 @@ export default function HomePage() {
  {cat.icon
  ? <img src={resolveImageUrl(cat.icon)} alt={cat.name} className="w-full h-full object-cover rounded-xl"
  onError={e => { e.target.src = '/logo.png'; }} />
- : <span className="text-2xl">{cat.emojiIcon || '??'}</span>
+ : <span className="text-2xl">{cat.emojiIcon || '🛍️'}</span>
  }
  </div>
  <span className="text-xs font-medium text-gray-800 text-center w-16 leading-tight line-clamp-2">
@@ -263,7 +263,7 @@ export default function HomePage() {
  {/* No products available */}
  {visibleProducts.length === 0 && (
  <div className="flex flex-col items-center justify-center py-16 text-center">
- <span className="text-5xl mb-4">??</span>
+ <span className="text-5xl mb-4">🛍️</span>
  <p className="text-sm font-semibold text-gray-700">No Products Available</p>
  <p className="text-xs text-gray-400 mt-1 max-w-xs">
  {pincode

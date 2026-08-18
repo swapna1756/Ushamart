@@ -30,17 +30,28 @@ export default function OrderTracking() {
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState('');
 
-  useEffect(() => {
+  const load = () => {
     setLoading(true);
+    setFetchError('');
     ordersApi.getById(id)
-      .then(r => setOrder(r.data))
+      .then(r => {
+        if (r?.data) {
+          setOrder(r.data);
+        } else {
+          setFetchError('Order not found.');
+        }
+      })
       .catch((err) => {
-        console.error('Order tracking fetch error:', err.message);
+        console.error('[OrderTracking] fetch error:', err.message);
+        setFetchError(err.message || 'Unable to load order details. Please try again.');
         setOrder(null);
       })
       .finally(() => setLoading(false));
-  }, [id]);
+  };
+
+  useEffect(() => { load(); }, [id]);
 
   if (loading) {
     return (
@@ -51,13 +62,42 @@ export default function OrderTracking() {
   }
 
   if (!order) {
+    // Network / server error → show retry
+    const isNetworkError = fetchError && fetchError !== 'Order not found.';
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
         <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm text-center max-w-sm w-full space-y-4">
-          <p className="text-sm font-semibold text-gray-700">Order not found</p>
-          <button onClick={() => navigate('/orders')} className="w-full py-2.5 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-primary/95 transition">
-            Back to Orders
-          </button>
+          {isNetworkError ? (
+            <>
+              <p className="text-sm font-semibold text-gray-700">Could not load order</p>
+              <p className="text-xs text-gray-500">{fetchError}</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => navigate('/orders')}
+                  className="flex-1 py-2.5 rounded-xl border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-50 transition"
+                >
+                  My Orders
+                </button>
+                <button
+                  onClick={load}
+                  className="flex-1 py-2.5 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-primary/90 transition shadow-md shadow-primary/20"
+                >
+                  Try Again
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-semibold text-gray-700">Order not found</p>
+              <p className="text-xs text-gray-500">This order may have been removed or the link is incorrect.</p>
+              <button
+                onClick={() => navigate('/orders')}
+                className="w-full py-2.5 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-primary/95 transition"
+              >
+                Back to Orders
+              </button>
+            </>
+          )}
         </div>
       </div>
     );

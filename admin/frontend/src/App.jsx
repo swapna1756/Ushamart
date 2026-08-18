@@ -143,7 +143,6 @@ export default function App() {
  <Route path="/users" element={<UsersPage />} />
  <Route path="/inventory" element={<InventoryPage />} />
  <Route path="/special-offers" element={<SpecialOffersPage />} />
- <Route path="/banners font" element={<BannersPage />} />
  <Route path="/banners" element={<BannersPage />} />
  <Route path="/location-management" element={<LocationManagementPage />} />
  <Route path="/pincodes" element={<PincodesPage />} />

@@ -136,3 +136,15 @@ export const wishlistApi = {
   remove:  (productId) => del(`/wishlist/${productId}`),
   clear:   ()          => del('/wishlist/clear'),
 };
+
+// ── Cart (server-side persistence) ───────────────────────────────────────────
+export const cartApi = {
+  // Returns { [cartKey]: quantity } for the logged-in user
+  get:    ()             => get('/cart'),
+  // Full sync: replace the server cart with the local map
+  sync:   (cart)         => put('/cart', { cart }),
+  // Update a single item (quantity 0 removes it)
+  update: (cartKey, qty) => patch(`/cart/${encodeURIComponent(cartKey)}`, { quantity: qty }),
+  // Clear entire cart (called after order is placed)
+  clear:  ()             => del('/cart'),
+};

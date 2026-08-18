@@ -331,10 +331,6 @@ export default function CheckoutPage() {
     setPlacing(true);
     try {
       await ensureBackendToken();
-      const session = await authApi.me();
-      if (!session?.user?.id || selectedAddress.userId !== session.user.id) {
-        throw new Error('Please select a valid delivery address.');
-      }
 
       const idempotencyKey = `ord-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Edit2, Trash2, ToggleLeft, ToggleRight, RefreshCw,
  ChevronLeft, ChevronRight, ArrowUpDown, Loader2, X, CheckCircle } from 'lucide-react';
@@ -187,7 +187,6 @@ function ProductModal({ isOpen, onClose, onSave, editing, categories, pincodes }
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
  <div><label className="text-xs font-medium text-label block mb-1.5">Category *</label>
  <select value={form.category} onChange={e=>set('category',e.target.value)} className={fi+' cursor-pointer'}>
- <option value="">Selectâ€¦</option>
  <option value="">Select…</option>
  {categories.map(c=><option key={c.id} value={c.id}>{c.emojiIcon||''} {c.name}</option>)}
  </select></div>
@@ -233,10 +232,10 @@ function ProductModal({ isOpen, onClose, onSave, editing, categories, pincodes }
  <div className="space-y-3">
  <div><label className="text-xs font-medium text-label block mb-1.5">Status</label>
  <select value={form.status} onChange={e=>set('status',e.target.value)} className={fi+' cursor-pointer'}>
- <option value="published">âœ… Published</option>
- <option value="inactive">ðŸš« Inactive</option>
- <option value="draft">ðŸ• Draft</option>
- <option value="hidden">ðŸ“ Hidden</option>
+ <option value="published">✅ Published</option>
+ <option value="inactive">🚫 Inactive</option>
+ <option value="draft">Draft</option>
+ <option value="hidden">Hidden</option>
  </select></div>
  {pincodes.length > 0 && (
  <div><label className="text-xs font-medium text-label block mb-1.5">Available Pincodes</label>
@@ -264,7 +263,7 @@ function ProductModal({ isOpen, onClose, onSave, editing, categories, pincodes }
  imgs[0] = url;
  set('images', imgs);
  }}
- hint="JPG, PNG, WebP Â· Max 5 MB Â· This is the main display image"
+ hint="JPG, PNG, WebP · Max 5 MB · This is the main display image"
  />
  {/* Additional images */}
  {form.images.length > 0 && (
@@ -303,7 +302,7 @@ function ProductModal({ isOpen, onClose, onSave, editing, categories, pincodes }
  className="flex-1 py-3 rounded-xl text-xs font-medium text-white flex items-center justify-center gap-1.5 disabled:opacity-50"
  style={{background:saving?'#93c5fd':'linear-gradient(135deg,#2563EB,#3B82F6)',boxShadow:'0 4px 16px rgba(37,99,235,0.35)'}}>
  {saving?<Loader2 size={14} className="spin"/>:<CheckCircle size={14}/>}
- {saving?'Savingâ€¦':editing?'Update Product':'Create Product'}
+ {saving?'Saving…':editing?'Update Product':'Create Product'}
  </button>
  </div>
  </div>
